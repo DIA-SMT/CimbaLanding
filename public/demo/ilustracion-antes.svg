@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Ilustración de calzada deteriorada">
+  <defs>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 0.2  0 0 0 0 0.22  0 0 0 0 0.25  0 0 0 0.55 0"/><feComposite operator="in" in2="SourceGraphic"/></filter>
+    <radialGradient id="hole" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#1b1d21"/><stop offset=".7" stop-color="#2c2f35"/><stop offset="1" stop-color="#4a4e56"/></radialGradient>
+  </defs>
+  <rect width="640" height="400" fill="#5d626b"/>
+  <rect width="640" height="400" fill="#000" filter="url(#grain)"/>
+  <path d="M190 170c40-48 140-60 210-30 62 26 70 92 18 130-58 42-170 40-226 4-38-24-38-70-2-104z" fill="url(#hole)"/>
+  <path d="M120 120l40 30 20-12 30 26M430 110l-30 46 24 18M460 300l-40-20-18 30M150 300l50-26 14 22" stroke="#33363c" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,189 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CIMBA Ciudadano — tokens de diseño
+   Paleta institucional de referencia (Municipalidad de SMT).
+   Si se publican tokens oficiales, reemplazar SOLO este bloque.
+   ============================================================ */
+:root {
+  --smt-institucional: #0b377f;
+  --smt-primary: #0066ff; /* token oficial CIMBA --color-azul */
+  --smt-celeste: #2eb1ff; /* token oficial CIMBA --color-celeste */
+  --smt-amarillo: #f4dc00; /* token oficial CIMBA --color-amarillo */
+  --smt-bg: #f4f7fc;
+  --smt-surface: #ffffff;
+  --smt-ink: #102b57;
+  --smt-ink-soft: #4a5f80;
+  --smt-border: #dfe7f3;
+
+  /* Estados públicos: semáforo de CIMBA (formato.ts SEMAFORO_HEX), texto oscurecido para AA */
+  --st-finalizado: #0e7340;
+  --st-finalizado-bg: #e7f6ee;
+  --st-ejecucion: #7a5600;
+  --st-ejecucion-bg: #fdf3d3;
+  --st-programado: #a63d06;
+  --st-programado-bg: #fdeadf;
+  --st-pendiente: #b42318;
+  --st-pendiente-bg: #fdebea;
+  --st-corte: #6d28d9; /* cortes: violeta, fuera del semáforo */
+  --st-corte-bg: #f1ebfe;
+
+  /* Tonos decorativos (tarjetas y accesos), independientes del estado */
+  --tono-azul: #e6f0ff;
+  --tono-azul-fg: #0052cc;
+  --tono-verde: #e7f6ee;
+  --tono-verde-fg: #0e7340;
+  --tono-amarillo: #fff7cc;
+  --tono-amarillo-fg: #6e5200;
+  --tono-violeta: #f0ecfd;
+  --tono-violeta-fg: #5b3cc4;
+
+  --radius-card: 1.25rem;
+  --shadow-soft: 0 1px 2px rgb(16 43 87 / 0.04), 0 8px 24px -8px rgb(16 43 87 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(16 43 87 / 0.05), 0 18px 40px -14px rgb(16 43 87 / 0.22);
+  --header-h: 72px;
+}
+
+@theme inline {
+  --color-institucional: var(--smt-institucional);
+  --color-primary: var(--smt-primary);
+  --color-celeste: var(--smt-celeste);
+  --color-amarillo: var(--smt-amarillo);
+  --color-canvas: var(--smt-bg);
+  --color-surface: var(--smt-surface);
+  --color-ink: var(--smt-ink);
+  --color-ink-soft: var(--smt-ink-soft);
+  --color-line: var(--smt-border);
+
+  --color-finalizado: var(--st-finalizado);
+  --color-finalizado-bg: var(--st-finalizado-bg);
+  --color-ejecucion: var(--st-ejecucion);
+  --color-ejecucion-bg: var(--st-ejecucion-bg);
+  --color-programado: var(--st-programado);
+  --color-programado-bg: var(--st-programado-bg);
+  --color-pendiente: var(--st-pendiente);
+  --color-pendiente-bg: var(--st-pendiente-bg);
+  --color-corte: var(--st-corte);
+  --color-corte-bg: var(--st-corte-bg);
+  --color-tono-azul: var(--tono-azul);
+  --color-tono-azul-fg: var(--tono-azul-fg);
+  --color-tono-verde: var(--tono-verde);
+  --color-tono-verde-fg: var(--tono-verde-fg);
+  --color-tono-amarillo: var(--tono-amarillo);
+  --color-tono-amarillo-fg: var(--tono-amarillo-fg);
+  --color-tono-violeta: var(--tono-violeta);
+  --color-tono-violeta-fg: var(--tono-violeta-fg);
+
+  --font-sans: "Plus Jakarta Sans Variable", system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+
+  --radius-card: var(--radius-card);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-lift: var(--shadow-lift);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 12px);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--smt-bg);
+  color: var(--smt-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--smt-amarillo);
+  color: var(--smt-ink);
+}
+
+/* Foco visible y consistente (WCAG 2.4.7 / 2.4.11) */
+:focus-visible {
+  outline: 3px solid var(--smt-primary);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.on-dark :focus-visible,
+.on-dark:focus-visible {
+  outline-color: var(--smt-amarillo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Skeleton */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e6edf7;
+  border-radius: 0.75rem;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.6), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Marca "hoja" amarilla usada como viñeta de título (DIM360) */
+.leaf {
+  display: inline-block;
+  width: 1.6rem;
+  height: 0.95rem;
+  background: var(--smt-amarillo);
+  border-radius: 0.95rem 0.15rem 0.95rem 0.15rem;
+  transform: skewX(-12deg);
+  flex: none;
+}
+
+/* MapLibre: ajustes visuales */
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-soft) !important;
+  overflow: hidden;
+}
+.maplibregl-ctrl-attrib {
+  font-size: 11px;
+}
+.maplibregl-canvas:focus-visible {
+  outline-offset: -3px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Barrido del glifo radar de CIMBA */
+@keyframes barrido {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Con el formulario de CiDiTuc abierto (que trae su propio Migue) se oculta el lanzador del portal. */
+html[data-cidituc-abierto] [data-migue-launcher] {
+  display: none;
+}

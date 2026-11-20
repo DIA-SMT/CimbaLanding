@@ -78,7 +78,14 @@ const nextConfig: NextConfig = {
         };
       }),
     ],
-    formats: ["image/avif", "image/webp"],
+    // WebP: se genera mucho más rápido que AVIF (la primera visita a cada foto
+    // no espera la conversión) y todos los celulares actuales lo muestran.
+    formats: ["image/webp"],
+    // Las fotos no cambian (su nombre lleva id o fecha): se guardan convertidas
+    // 30 días en vez de los 60 segundos por defecto, que obligaban a reconvertir.
+    minimumCacheTTL: 2_592_000,
+    // Anchos pensados para tarjetas y comparadores (sin variantes 4K innecesarias).
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

@@ -1,25 +1,37 @@
 "use client";
 
-import Image from "next/image";
 import { useId, useState } from "react";
 import { ChevronsLeftRight } from "lucide-react";
 import type { Photo } from "@/domain/schemas";
+import { Foto } from "./Foto";
+
+export const SIZES_COMPARADOR = "(min-width: 1024px) 420px, 90vw";
 
 /**
  * Comparador antes/después accesible: el control es un <input type="range">
  * nativo (teclado, lectores de pantalla y táctil), con la imagen recortada
  * mediante clip-path para no provocar reflow.
  */
-export function BeforeAfter({ before, after, className = "" }: { before: Photo; after: Photo; className?: string }) {
+export function BeforeAfter({
+  before,
+  after,
+  className = "",
+  loading = "lazy",
+}: {
+  before: Photo;
+  after: Photo;
+  className?: string;
+  loading?: "lazy" | "eager";
+}) {
   const id = useId();
   const [pos, setPos] = useState(50);
   const illustrative = before.illustrative || after.illustrative;
 
   return (
     <div className={`group relative isolate overflow-hidden rounded-2xl bg-ink/10 select-none ${className}`}>
-      <Image src={after.url} alt={after.alt} fill sizes="(min-width: 1024px) 420px, 90vw" className="object-cover" loading="lazy" unoptimized={after.url.endsWith(".svg")} />
+      <Foto key={after.url} foto={after} sizes={SIZES_COMPARADOR} loading={loading} />
       <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
-        <Image src={before.url} alt={before.alt} fill sizes="(min-width: 1024px) 420px, 90vw" className="object-cover" loading="lazy" unoptimized={before.url.endsWith(".svg")} />
+        <Foto key={before.url} foto={before} sizes={SIZES_COMPARADOR} loading={loading} />
       </div>
 
       <div aria-hidden className="pointer-events-none absolute inset-y-0 w-0.5 bg-white shadow-[0_0_0_1px_rgb(0_0_0/0.1)]" style={{ left: `${pos}%` }}>

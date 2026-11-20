@@ -1,11 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { CalendarDays, Clock, Construction, HardHat, ImageOff, MapPin, Signpost, Timer, Wrench, X } from "lucide-react";
 import type { Intervention, TrafficClosure } from "@/domain/schemas";
 import { DATE_LABEL, STATUS_META, kindLabel } from "@/domain/labels";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { BeforeAfter } from "@/components/ui/BeforeAfter";
+import { Foto } from "@/components/ui/Foto";
 import { ClosureBadge, StatusBadge } from "@/components/ui/primitives";
 
 function Row({ icon: Icon, label, children }: { icon: typeof MapPin; label: string; children: React.ReactNode }) {
@@ -40,7 +40,7 @@ export function InterventionDetail({ item, onClose }: { item: Intervention; onCl
         <BeforeAfter before={before} after={after} className="aspect-[16/10]" />
       ) : single ? (
         <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
-          <Image src={single.url} alt={single.alt} fill sizes="380px" className="object-cover" unoptimized={single.url.endsWith(".svg")} />
+          <Foto key={single.url} foto={single} sizes="380px" loading="eager" />
         </div>
       ) : (
         <p className="flex items-center gap-2 rounded-2xl bg-canvas px-4 py-3 text-sm text-ink-soft">

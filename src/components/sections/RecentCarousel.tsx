@@ -1,20 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getImageProps } from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 import type { DataMode, Intervention } from "@/domain/schemas";
 import { DATE_LABEL, kindLabel } from "@/domain/labels";
 import { formatDate } from "@/lib/format";
 import { goToMap } from "@/hooks/useExplorer";
-import { BeforeAfter } from "@/components/ui/BeforeAfter";
+import { BeforeAfter, SIZES_COMPARADOR } from "@/components/ui/BeforeAfter";
 import { DataModeBadge, StatusBadge } from "@/components/ui/primitives";
+
+/**
+ * Descarga en segundo plano las fotos de las diapositivas vecinas, con el mismo
+ * srcset y sizes que usará el comparador: al pasar de diapositiva, el navegador
+ * ya las tiene y no se ve el recuadro gris (sobre todo en datos móviles).
+ */
+function precargar(items: Intervention[]) {
+  for (const it of items) {
+    for (const p of [it.photos.before, it.photos.after]) {
+      if (!p || p.url.endsWith(".svg")) continue;
+      const { props } = getImageProps({ src: p.url, alt: "", fill: true, sizes: SIZES_COMPARADOR });
+      const img = new window.Image();
+      img.decoding = "async";
+      if (props.sizes) img.sizes = props.sizes;
+      if (props.srcSet) img.srcset = props.srcSet;
+      img.src = props.src;
+    }
+  }
+}
 
 export function RecentCarousel({ items, mode }: { items: Intervention[] | null; mode: DataMode }) {
   const [idx, setIdx] = useState(0);
   const [dir, setDir] = useState(1);
   const list = items ?? [];
   const item = list[idx];
+
+  useEffect(() => {
+    const todas = items ?? [];
+    if (todas.length < 2) return;
+    const vecinas = [todas[(idx + 1) % todas.length]!, todas[(idx - 1 + todas.length) % todas.length]!];
+    // Después de que la diapositiva actual terminó de pedir lo suyo.
+    const t = window.setTimeout(() => precargar(vecinas), 600);
+    return () => window.clearTimeout(t);
+  }, [idx, items]);
 
   const go = (d: number) => {
     setDir(d);
@@ -70,7 +99,7 @@ export function RecentCarousel({ items, mode }: { items: Intervention[] | null; 
               aria-label={`${idx + 1} de ${list.length}`}
             >
               {item.photos.before && item.photos.after ? (
-                <BeforeAfter before={item.photos.before} after={item.photos.after} className="aspect-[16/10] sm:aspect-auto sm:min-h-44" />
+                <BeforeAfter before={item.photos.before} after={item.photos.after} loading="eager" className="aspect-[16/10] sm:aspect-auto sm:min-h-44" />
               ) : (
                 <div className="grid aspect-[16/10] place-items-center rounded-2xl bg-canvas text-center text-sm text-ink-soft sm:aspect-auto sm:min-h-44">
                   <span className="flex flex-col items-center gap-2 px-4">

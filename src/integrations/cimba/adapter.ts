@@ -1,4 +1,5 @@
 import "server-only";
+import { rutaFotoLocal } from "./fotos-externas";
 
 import {
   interventionSchema,
@@ -64,7 +65,7 @@ function resolvePhoto(url: string | null | undefined, opts: AdaptOptions, alt: s
     const u = new URL(url, opts.origin);
     if (u.protocol !== "https:") return null;
     if (!opts.photoOrigins.includes(u.origin)) return null;
-    return { url: u.toString(), alt };
+    return { url: rutaFotoLocal(u), alt };
   } catch {
     return null;
   }

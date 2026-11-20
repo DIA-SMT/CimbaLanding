@@ -68,3 +68,50 @@ export function requestSmt<T>(
     req.end();
   });
 }
+
+const TIPOS_IMAGEN = /^image\/(jpeg|png|webp|gif|avif)$/;
+
+/**
+ * Descarga una imagen de un servidor municipal con la misma cadena de
+ * certificados. Sólo devuelve imágenes (por tipo declarado) de hasta `maxBytes`.
+ */
+export function descargarImagenSmt(
+  url: URL,
+  { timeoutMs = 10_000, maxBytes = 8_000_000 }: { timeoutMs?: number; maxBytes?: number } = {},
+): Promise<{ status: number; tipo: string | null; cuerpo: Buffer | null }> {
+  if (url.protocol !== "https:") return Promise.reject(new Error("Sólo HTTPS"));
+  return new Promise((resolve, reject) => {
+    const req = request(
+      {
+        protocol: url.protocol,
+        hostname: url.hostname,
+        port: url.port,
+        path: url.pathname,
+        method: "GET",
+        ca: CA,
+        headers: { accept: "image/*" },
+        timeout: timeoutMs,
+      },
+      (res) => {
+        const status = res.statusCode ?? 0;
+        const tipo = (res.headers["content-type"] ?? "").split(";")[0]!.trim().toLowerCase();
+        if (status !== 200 || !TIPOS_IMAGEN.test(tipo)) {
+          res.resume();
+          resolve({ status: status === 200 ? 415 : status, tipo: null, cuerpo: null });
+          return;
+        }
+        const trozos: Buffer[] = [];
+        let total = 0;
+        res.on("data", (t: Buffer) => {
+          total += t.length;
+          if (total > maxBytes) req.destroy(new Error("Imagen demasiado grande"));
+          else trozos.push(t);
+        });
+        res.on("end", () => resolve({ status, tipo, cuerpo: Buffer.concat(trozos) }));
+      },
+    );
+    req.on("timeout", () => req.destroy(new Error(`Tiempo de espera agotado (${timeoutMs} ms)`)));
+    req.on("error", reject);
+    req.end();
+  });
+}

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CalendarDays, ImageOff, Loader2, MapPin } from "lucide-react";
@@ -9,6 +8,7 @@ import { DATE_LABEL, STATUS_META, STATUS_ORDER, kindLabel } from "@/domain/label
 import { formatDate } from "@/lib/format";
 import { goToMap } from "@/hooks/useExplorer";
 import { BeforeAfter } from "@/components/ui/BeforeAfter";
+import { Foto } from "@/components/ui/Foto";
 import { DataModeBadge, StatusBadge } from "@/components/ui/primitives";
 
 import { PAGE } from "@/lib/paginacion";
@@ -132,7 +132,7 @@ function Card({ item }: { item: Intervention }) {
           <BeforeAfter before={before} after={after} className="aspect-[16/10]" />
         ) : single ? (
           <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
-            <Image src={single.url} alt={single.alt} fill loading="lazy" sizes="(min-width:1280px) 400px, (min-width:640px) 45vw, 92vw" className="object-cover" unoptimized={single.url.endsWith(".svg")} />
+            <Foto key={single.url} foto={single} sizes="(min-width:1280px) 400px, (min-width:640px) 45vw, 92vw" />
           </div>
         ) : (
           <div className={`relative flex h-24 items-end overflow-hidden rounded-2xl p-3 ${STATUS_META[item.status].bg}`}>

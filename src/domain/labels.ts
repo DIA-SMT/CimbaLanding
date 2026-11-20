@@ -70,8 +70,10 @@ export const PROBLEM_LABEL: Record<string, string> = {
 };
 
 /** Qué se muestra como "tipo" de una ficha: el trabajo, o el problema si todavía no hay trabajo. */
-export function kindLabel(i: { type: InterventionType | null; problem?: string | null }): string {
-  return i.type ? TYPE_LABEL[i.type] : (i.problem ?? "Problema vial");
+export function kindLabel(i: { type: InterventionType | null; problem?: string | null; status?: InterventionStatus }): string {
+  if (i.type) return TYPE_LABEL[i.type];
+  if (i.problem) return i.problem;
+  return i.status === "finalizado" || i.status === "en_ejecucion" ? "Reparación vial" : "Problema vial";
 }
 
 export const CLOSURE_STATUS_META: Record<ClosureStatus, { label: string; bg: string; text: string }> = {

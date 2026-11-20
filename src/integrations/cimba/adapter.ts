@@ -54,6 +54,10 @@ const dayToIso = (d: string | null | undefined): string | null =>
 
 const clean = (s: string | null | undefined) => (s ? s.replace(/\s+/g, " ").trim() || null : null);
 
+/** "Andrés Chazarreta 1770, Municipalidad de San Miguel De Tucuman, Tucumán" → "Andrés Chazarreta 1770". */
+const direccionCorta = (s: string | null | undefined) =>
+  clean(s?.replace(/,\s*(municipalidad de )?san miguel de tucum[aá]n.*$/i, "").replace(/,\s*tucum[aá]n\s*$/i, ""));
+
 function resolvePhoto(url: string | null | undefined, opts: AdaptOptions, alt: string): Photo | null {
   if (!url) return null;
   try {
@@ -110,7 +114,7 @@ export function adaptAvance(datos: DatosAvance, capas: CapasAvance | null, opts:
     }
     const [lng, lat] = f.geometry.coordinates;
     const hood = place(lng, lat, barrioDeTrabajo.get(p.id));
-    const where = clean(p.direccion);
+    const where = direccionCorta(p.direccion);
     const after = resolvePhoto(p.foto, opts, `Calle reparada${where ? ` en ${where}` : ""} (después del trabajo)`);
     const before = resolvePhoto(p.fotoAntes, opts, `Estado de la calle${where ? ` en ${where}` : ""} antes del trabajo`);
     raw.push({
@@ -119,7 +123,8 @@ export function adaptAvance(datos: DatosAvance, capas: CapasAvance | null, opts:
       reference: null,
       neighborhoodId: hood.id,
       neighborhood: hood.name,
-      type: asType(p.tipo) ?? "bacheo",
+      // Sin tipo cargado en CIMBA: no se inventa ("Reparación vial" en la ficha).
+      type: asType(p.tipo),
       problem: null,
       status: "finalizado",
       company: p.empresa && p.empresa !== "Otros" ? p.empresa : null,
@@ -139,7 +144,7 @@ export function adaptAvance(datos: DatosAvance, capas: CapasAvance | null, opts:
     const hood = place(lng, lat);
     raw.push({
       id: `o${p.id}`,
-      street: clean(p.direccion) ?? "Dirección no publicada",
+      street: direccionCorta(p.direccion) ?? "Dirección no publicada",
       reference: null,
       neighborhoodId: hood.id,
       neighborhood: hood.name,
@@ -167,7 +172,7 @@ export function adaptAvance(datos: DatosAvance, capas: CapasAvance | null, opts:
     const hood = place(lng, lat);
     raw.push({
       id: `p${p.id}`,
-      street: clean(p.direccion) ?? (hood.id === "sin-barrio" ? "Ubicación sin dirección publicada" : `Problema registrado en ${hood.name}`),
+      street: direccionCorta(p.direccion) ?? (hood.id === "sin-barrio" ? "Ubicación sin dirección publicada" : `Problema registrado en ${hood.name}`),
       reference: null,
       neighborhoodId: hood.id,
       neighborhood: hood.name,

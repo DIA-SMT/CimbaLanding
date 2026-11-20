@@ -30,8 +30,11 @@ export interface CimbaConfig {
   photoOrigins: string[];
 }
 
+/** En desarrollo se permite http a un CIMBA local o de la red interna (prueba con datos reales). */
+const RED_LOCAL = /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/;
+
 function assertSafeUrl(u: URL) {
-  const local = /^(localhost|127\.0\.0\.1)$/.test(u.hostname) && process.env.NODE_ENV !== "production";
+  const local = RED_LOCAL.test(u.hostname) && process.env.NODE_ENV !== "production";
   if (u.protocol !== "https:" && !local) throw new DataUnavailableError("La integración con CIMBA exige HTTPS");
 }
 
@@ -79,7 +82,8 @@ export function createCimbaSource(cfg: CimbaConfig): PublicDataSource {
         capas = parsed.success ? parsed.data : null;
       }
       const out = adaptAvance(datos.data, capas, {
-        origin,
+        // Con un CIMBA local (http) las rutas /fotos/... se buscan donde viven de verdad.
+        origin: origin.startsWith("https://") ? origin : "https://cimba.smt.gob.ar",
         photoOrigins: cfg.photoOrigins,
         windowDays: cfg.windowDays,
       });

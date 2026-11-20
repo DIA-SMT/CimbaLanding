@@ -66,4 +66,6 @@ El navegador nunca habla con CIMBA: sólo con `/api/*` del portal.
 ## Documentación
 
 - [docs/CONTRATOS_API.md](docs/CONTRATOS_API.md) — integración con la API pública de CIMBA y equivalencias.
+- [docs/cimba/README.md](docs/cimba/README.md) — datos reales con vistas de solo lectura en la base de CIMBA (recomendado).
+- [docs/PRUEBA-DATOS-REALES.md](docs/PRUEBA-DATOS-REALES.md) — cómo ver el portal con datos reales de CIMBA en local.
 - [docs/PENDIENTES.md](docs/PENDIENTES.md) — recursos oficiales e integraciones faltantes (incluye el alta de reclamos en CiDiTuc).

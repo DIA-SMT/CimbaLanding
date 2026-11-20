@@ -46,11 +46,32 @@ export function CiditucFrame({ loginBase = null }: { loginBase?: string | null }
     return () => mq.removeEventListener("change", actualizar);
   }, []);
 
-  // CiDiTuc trae su propio Migue: mientras el formulario está abierto se oculta el del portal.
+  /**
+   * CiDiTuc trae su propio Migue: el del portal se oculta SÓLO mientras el
+   * formulario de CiDiTuc está a la vista (pantalla completa en celular, o el
+   * recuadro visible en escritorio). En el resto de la página se ve normal.
+   */
+  const marcoRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    document.documentElement.toggleAttribute("data-cidituc-abierto", abierto);
-    return () => document.documentElement.removeAttribute("data-cidituc-abierto");
-  }, [abierto]);
+    const raiz = document.documentElement;
+    const ocultar = (si: boolean) => raiz.toggleAttribute("data-cidituc-abierto", si);
+    if (!abierto) {
+      ocultar(false);
+      return;
+    }
+    if (movil) {
+      ocultar(true);
+      return () => ocultar(false);
+    }
+    const el = marcoRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => ocultar(Boolean(e?.isIntersecting)), { threshold: 0.15 });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      ocultar(false);
+    };
+  }, [abierto, movil]);
 
   // En móvil, pantalla completa: bloquea el scroll de fondo y cierra con Escape.
   useEffect(() => {
@@ -77,6 +98,7 @@ export function CiditucFrame({ loginBase = null }: { loginBase?: string | null }
 
   const marco = (
     <div
+      ref={marcoRef}
       className={
         movil
           ? "fixed inset-0 z-[70] flex flex-col bg-white"

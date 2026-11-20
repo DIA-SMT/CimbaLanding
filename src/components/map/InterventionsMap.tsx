@@ -17,7 +17,8 @@ export interface MapFocus {
 }
 
 interface Props {
-  interventions: Intervention[];
+  /** Sólo hace falta id, estado y posición (puntos livianos). */
+  interventions: Array<Pick<Intervention, "id" | "status" | "location">>;
   closures: TrafficClosure[];
   showClosures: boolean;
   selectedId: string | null;
@@ -38,7 +39,7 @@ const statusColor: maplibregl.ExpressionSpecification = [
   STATUS_META.pendiente.color,
 ];
 
-function toPoints(items: Intervention[]): GeoJSON.FeatureCollection<GeoJSON.Point> {
+function toPoints(items: Props["interventions"]): GeoJSON.FeatureCollection<GeoJSON.Point> {
   return {
     type: "FeatureCollection",
     features: items.map((i) => ({

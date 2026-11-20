@@ -29,12 +29,10 @@ function save(id: string | null) {
 
 export function MyNeighborhood({
   neighborhoods,
-  interventions,
   closures,
   mode,
 }: {
   neighborhoods: Neighborhood[];
-  interventions: Intervention[];
   closures: TrafficClosure[];
   mode: DataMode;
 }) {
@@ -56,9 +54,28 @@ export function MyNeighborhood({
   };
 
   const hood = neighborhoods.find((n) => n.id === hoodId) ?? null;
+  /** Las intervenciones del barrio se piden recién al elegirlo (no viajan con la portada). */
+  const [delBarrio, setDelBarrio] = useState<{ id: string; items: Intervention[] } | null>(null);
+  const [cargandoBarrio, setCargandoBarrio] = useState(false);
+  useEffect(() => {
+    if (!hoodId) return;
+    let vivo = true;
+    setCargandoBarrio(true);
+    fetch(`/api/public/interventions?neighborhood=${encodeURIComponent(hoodId)}&limit=500`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => vivo && setDelBarrio({ id: hoodId, items: Array.isArray(body?.data) ? (body.data as Intervention[]) : [] }))
+      .catch(() => vivo && setDelBarrio({ id: hoodId, items: [] }))
+      .finally(() => vivo && setCargandoBarrio(false));
+    return () => {
+      vivo = false;
+    };
+  }, [hoodId]);
   const items = useMemo(
-    () => interventions.filter((i) => i.neighborhoodId === hoodId).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "")),
-    [interventions, hoodId],
+    () =>
+      delBarrio && delBarrio.id === hoodId
+        ? [...delBarrio.items].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
+        : [],
+    [delBarrio, hoodId],
   );
   const hoodClosures = closures.filter((c) => c.neighborhoodId === hoodId && c.status !== "finalizado");
   const count = (s: Intervention["status"]) => items.filter((i) => i.status === s).length;
@@ -179,7 +196,7 @@ export function MyNeighborhood({
                 <ul className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
                   {(["finalizado", "en_ejecucion", "programado"] as const).map((s) => (
                     <li key={s} className={`rounded-2xl ${STATUS_META[s].bg} p-3 sm:p-4`}>
-                      <span className="block text-2xl font-extrabold sm:text-3xl">{count(s)}</span>
+                      <span className="block text-2xl font-extrabold sm:text-3xl">{cargandoBarrio ? "…" : count(s)}</span>
                       <span className={`text-xs font-bold sm:text-sm ${STATUS_META[s].text}`}>{s === "en_ejecucion" ? "En curso" : STATUS_META[s].label + "s"}</span>
                     </li>
                   ))}
@@ -207,7 +224,7 @@ export function MyNeighborhood({
                       <History className="size-4 text-primary" aria-hidden /> Historial reciente
                     </h4>
                     {items.length === 0 ? (
-                      <p className="text-sm text-ink-soft">Sin intervenciones publicadas.</p>
+                      <p className="text-sm text-ink-soft">{cargandoBarrio ? "Cargando…" : "Sin intervenciones publicadas."}</p>
                     ) : (
                       <ol className="relative grid gap-3 border-l-2 border-line pl-4">
                         {items.slice(0, 4).map((i) => (

@@ -16,7 +16,6 @@ export async function MapSection() {
         />
         {interventions.ok ? (
           <MapExplorer
-            interventions={interventions.data}
             closures={closures.ok ? closures.data : []}
             neighborhoods={neighborhoods.ok ? neighborhoods.data : []}
             mode={mode}

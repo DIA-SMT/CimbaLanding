@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, CalendarDays, ImageOff, MapPin } from "lucide-react";
+import { ArrowRight, CalendarDays, ImageOff, Loader2, MapPin } from "lucide-react";
 import type { DataMode, Intervention, InterventionStatus } from "@/domain/schemas";
 import { DATE_LABEL, STATUS_META, STATUS_ORDER, kindLabel } from "@/domain/labels";
 import { formatDate } from "@/lib/format";
@@ -11,13 +11,44 @@ import { goToMap } from "@/hooks/useExplorer";
 import { BeforeAfter } from "@/components/ui/BeforeAfter";
 import { DataModeBadge, StatusBadge } from "@/components/ui/primitives";
 
-const PAGE = 6;
+import { PAGE } from "@/lib/paginacion";
 
-export function InterventionsGrid({ items, mode }: { items: Intervention[]; mode: DataMode }) {
-  const [tab, setTab] = useState<InterventionStatus | "todas">("todas");
-  const [count, setCount] = useState(PAGE);
+export type Pestana = InterventionStatus | "todas";
+export type Inicial = Record<Pestana, { items: Intervention[]; total: number }>;
 
-  const list = useMemo(() => (tab === "todas" ? items : items.filter((i) => i.status === tab)), [items, tab]);
+/**
+ * Llegan con la página sólo las primeras tarjetas de cada pestaña (y el total
+ * de cada una). "Ver más" pide las siguientes a la API: la página no carga
+ * miles de fichas que nadie va a ver.
+ */
+export function InterventionsGrid({ inicial, mode }: { inicial: Inicial; mode: DataMode }) {
+  const [tab, setTab] = useState<Pestana>("todas");
+  const [porTab, setPorTab] = useState(inicial);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(false);
+
+  const { items: list, total } = porTab[tab];
+
+  const verMas = async () => {
+    setCargando(true);
+    setError(false);
+    try {
+      const qs = new URLSearchParams({ limit: String(PAGE), offset: String(list.length) });
+      if (tab !== "todas") qs.set("status", tab);
+      const r = await fetch(`/api/public/interventions?${qs}`);
+      const body = await r.json().catch(() => null);
+      if (!r.ok || !Array.isArray(body?.data)) throw new Error();
+      const nuevos = body.data as Intervention[];
+      setPorTab((prev) => {
+        const ya = new Set(prev[tab].items.map((i) => i.id));
+        return { ...prev, [tab]: { ...prev[tab], items: [...prev[tab].items, ...nuevos.filter((i) => !ya.has(i.id))] } };
+      });
+    } catch {
+      setError(true);
+    } finally {
+      setCargando(false);
+    }
+  };
 
   return (
     <div>
@@ -33,12 +64,15 @@ export function InterventionsGrid({ items, mode }: { items: Intervention[]; mode
                 type="button"
                 onClick={() => {
                   setTab(s);
-                  setCount(PAGE);
+                  setError(false);
                 }}
                 className={`relative min-h-10 shrink-0 rounded-full px-4 text-sm font-bold transition-colors ${on ? "text-white" : "text-ink hover:text-primary"}`}
               >
                 {on && <motion.span layoutId="int-tab" className="absolute inset-0 rounded-full bg-primary" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
-                <span className="relative">{s === "todas" ? "Todas" : STATUS_META[s].label}</span>
+                <span className="relative">
+                  {s === "todas" ? "Todas" : STATUS_META[s].label}
+                  <span className={`ml-1.5 text-xs font-semibold ${on ? "text-white/80" : "text-ink-soft"}`}>{porTab[s].total.toLocaleString("es-AR")}</span>
+                </span>
               </button>
             );
           })}
@@ -53,12 +87,12 @@ export function InterventionsGrid({ items, mode }: { items: Intervention[]; mode
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence mode="popLayout" initial={false}>
-            {list.slice(0, count).map((it, idx) => (
+            {list.map((it, idx) => (
               <motion.li
                 key={it.id}
                 layout
                 initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0, transition: { delay: Math.min(idx, 5) * 0.04 } }}
+                animate={{ opacity: 1, y: 0, transition: { delay: Math.min(idx % PAGE, 5) * 0.04 } }}
                 exit={{ opacity: 0, scale: 0.97 }}
               >
                 <Card item={it} />
@@ -68,15 +102,20 @@ export function InterventionsGrid({ items, mode }: { items: Intervention[]; mode
         </ul>
       )}
 
-      {count < list.length && (
-        <div className="mt-8 text-center">
+      {list.length < total && (
+        <div className="mt-8 flex flex-col items-center gap-2">
           <button
             type="button"
-            onClick={() => setCount((c) => c + PAGE)}
-            className="rounded-full border-2 border-primary px-6 py-3 font-bold text-primary transition hover:bg-primary hover:text-white"
+            onClick={verMas}
+            disabled={cargando}
+            className="inline-flex items-center gap-2 rounded-full border-2 border-primary px-6 py-3 font-bold text-primary transition hover:bg-primary hover:text-white disabled:opacity-60"
           >
+            {cargando && <Loader2 className="size-4 animate-spin" aria-hidden />}
             Ver más intervenciones
           </button>
+          <p className="text-sm text-ink-soft" aria-live="polite">
+            {error ? "No se pudieron cargar más. Probá de nuevo." : `Mostrando ${list.length.toLocaleString("es-AR")} de ${total.toLocaleString("es-AR")}`}
+          </p>
         </div>
       )}
     </div>

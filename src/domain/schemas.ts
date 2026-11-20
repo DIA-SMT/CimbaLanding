@@ -166,6 +166,7 @@ export const interventionsQuerySchema = z.object({
   from: isoDate.optional(),
   to: isoDate.optional(),
   limit: z.coerce.number().int().min(1).max(500).optional(),
+  offset: z.coerce.number().int().min(0).max(100_000).optional(),
 });
 
 export const closuresQuerySchema = z.object({

@@ -7,6 +7,7 @@ import { Construction, Crosshair, ListFilter, Loader2, MapPin, RotateCcw, Slider
 import type { DataMode, Intervention, InterventionStatus, InterventionType, Neighborhood, TrafficClosure } from "@/domain/schemas";
 import { DATE_LABEL, STATUS_META, STATUS_ORDER, TYPE_LABEL, kindLabel } from "@/domain/labels";
 import { filterInterventions } from "@/services/filters";
+import type { MapItem, MapPoint } from "@/domain/map-point";
 import { distanceKm, formatDate } from "@/lib/format";
 import { useExplorer } from "@/hooks/useExplorer";
 import { PlaceSearch } from "@/components/search/PlaceSearch";
@@ -21,7 +22,6 @@ const InterventionsMap = dynamic(() => import("./InterventionsMap"), {
 });
 
 interface Props {
-  interventions: Intervention[];
   closures: TrafficClosure[];
   neighborhoods: Neighborhood[];
   mode: DataMode;
@@ -29,7 +29,7 @@ interface Props {
 
 const TYPES = Object.keys(TYPE_LABEL) as InterventionType[];
 
-export function MapExplorer({ interventions, closures, neighborhoods, mode }: Props) {
+export function MapExplorer({ closures, neighborhoods, mode }: Props) {
   const explorer = useExplorer();
   const [query, setQuery] = useState("");
   const [statuses, setStatuses] = useState<InterventionStatus[]>([]);
@@ -46,6 +46,56 @@ export function MapExplorer({ interventions, closures, neighborhoods, mode }: Pr
   const [visible, setVisible] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const focusKey = useRef(0);
+
+  /**
+   * Los puntos del mapa (versión liviana) se piden recién cuando el mapa está
+   * por verse, y la ficha completa de cada punto recién cuando se abre.
+   */
+  const [points, setPoints] = useState<MapItem[] | null>(null);
+  const [estadoPuntos, setEstadoPuntos] = useState<"esperando" | "cargando" | "listo" | "error">("esperando");
+  const interventions = useMemo(() => points ?? [], [points]);
+  const [detalle, setDetalle] = useState<Intervention | null>(null);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  /** Pedido externo que llegó antes que los puntos: se resuelve cuando cargan. */
+  const pendiente = useRef<{ q?: string; id?: string } | null>(null);
+
+  useEffect(() => {
+    if (!visible || estadoPuntos !== "esperando") return;
+    setEstadoPuntos("cargando");
+    fetch("/api/public/map", { headers: { Accept: "application/json" } })
+      .then(async (r) => {
+        const body = await r.json().catch(() => null);
+        if (!r.ok || !body?.data) throw new Error("sin datos");
+        const nombres = new Map(neighborhoods.map((n) => [n.id, n.name]));
+        setPoints(
+          (body.data as MapPoint[]).map((p) => ({
+            ...p,
+            reference: null,
+            neighborhood: nombres.get(p.neighborhoodId) ?? "Sin barrio asignado",
+          })),
+        );
+        setEstadoPuntos("listo");
+      })
+      .catch(() => setEstadoPuntos("error"));
+  }, [visible, estadoPuntos, neighborhoods]);
+
+  // Ficha completa del punto elegido.
+  useEffect(() => {
+    if (!selectedId || closures.some((c) => c.id === selectedId)) {
+      setDetalle(null);
+      return;
+    }
+    let vivo = true;
+    setCargandoDetalle(true);
+    fetch(`/api/public/interventions/${encodeURIComponent(selectedId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => vivo && setDetalle((body?.data as Intervention) ?? null))
+      .catch(() => vivo && setDetalle(null))
+      .finally(() => vivo && setCargandoDetalle(false));
+    return () => {
+      vivo = false;
+    };
+  }, [selectedId, closures]);
 
   // Carga diferida del mapa cuando la sección se acerca al viewport.
   useEffect(() => {
@@ -74,7 +124,7 @@ export function MapExplorer({ interventions, closures, neighborhoods, mode }: Pr
     [closures, hood],
   );
 
-  const selectedIntervention = interventions.find((i) => i.id === selectedId) ?? null;
+  const selectedIntervention = detalle && detalle.id === selectedId ? detalle : null;
   const selectedClosure = closures.find((c) => c.id === selectedId) ?? null;
 
   const focusOn = (lat: number, lng: number, zoom?: number) => setFocus({ lat, lng, zoom, key: ++focusKey.current });
@@ -114,12 +164,24 @@ export function MapExplorer({ interventions, closures, neighborhoods, mode }: Pr
       if (q) {
         const first = filterInterventions(interventions, { q })[0];
         if (first) focusOn(first.location.lat, first.location.lng, 14.5);
+        else if (!points) pendiente.current = { q };
       }
     }
-    if (explorer.selectedId) select(explorer.selectedId);
-    else setSelectedId(null);
+    if (explorer.selectedId) {
+      select(explorer.selectedId);
+      if (!points) pendiente.current = { id: explorer.selectedId };
+    } else setSelectedId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [explorer.nonce]);
+
+  // Cuando llegan los puntos, se completa un pedido externo que había quedado esperando.
+  useEffect(() => {
+    const p = pendiente.current;
+    if (!points || !p) return;
+    pendiente.current = null;
+    const it = p.id ? points.find((i) => i.id === p.id) : p.q ? filterInterventions(points, { q: p.q })[0] : undefined;
+    if (it) focusOn(it.location.lat, it.location.lng, p.id ? undefined : 14.5);
+  }, [points]);
 
   const toggleStatus = (s: InterventionStatus) =>
     setStatuses((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
@@ -160,6 +222,13 @@ export function MapExplorer({ interventions, closures, neighborhoods, mode }: Pr
 
   const detail = selectedIntervention ? (
     <InterventionDetail item={selectedIntervention} onClose={() => setSelectedId(null)} />
+  ) : selectedId && cargandoDetalle && !selectedClosure ? (
+    <div className="space-y-3" aria-busy="true" aria-label="Cargando ficha">
+      <div className="skeleton h-6 w-24" />
+      <div className="skeleton h-7 w-3/4" />
+      <div className="skeleton aspect-[16/10] w-full" />
+      <div className="skeleton h-4 w-2/3" />
+    </div>
   ) : selectedClosure ? (
     <ClosureDetail item={selectedClosure} onClose={() => setSelectedId(null)} />
   ) : null;
@@ -337,11 +406,31 @@ export function MapExplorer({ interventions, closures, neighborhoods, mode }: Pr
             <div className="flex items-center gap-2 px-4 pb-2 pt-4 sm:px-5">
               <ListFilter className="size-4 text-primary" aria-hidden />
               <p className="font-bold text-ink" role="status" aria-live="polite">
-                {filtered.length} {filtered.length === 1 ? "intervención" : "intervenciones"}
+                {estadoPuntos === "listo"
+                  ? `${filtered.length} ${filtered.length === 1 ? "intervención" : "intervenciones"}`
+                  : estadoPuntos === "error"
+                    ? "No se pudieron cargar las intervenciones"
+                    : "Cargando intervenciones…"}
               </p>
               <DataModeBadge mode={mode} className="ml-auto" />
             </div>
-            {filtered.length === 0 ? (
+            {estadoPuntos === "error" ? (
+              <div className="px-5 pb-6 text-ink-soft">
+                Probá de nuevo en unos minutos.{" "}
+                <button type="button" onClick={() => setEstadoPuntos("esperando")} className="font-bold text-primary underline">
+                  Reintentar
+                </button>
+              </div>
+            ) : estadoPuntos !== "listo" ? (
+              <ul className="space-y-3 px-5 pb-6" aria-busy="true">
+                {[0, 1, 2, 3].map((k) => (
+                  <li key={k} className="space-y-1.5">
+                    <div className="skeleton h-4 w-3/4" />
+                    <div className="skeleton h-3 w-1/2" />
+                  </li>
+                ))}
+              </ul>
+            ) : filtered.length === 0 ? (
               <div className="px-5 pb-6 text-ink-soft">
                 No hay intervenciones publicadas que coincidan con los filtros.{" "}
                 <button type="button" onClick={reset} className="font-bold text-primary underline">

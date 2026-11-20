@@ -7,8 +7,13 @@ import type {
 } from "@/domain/schemas";
 import { matchesQuery } from "@/lib/format";
 
+/** Lo mínimo que necesita el filtro: sirve para la ficha completa y para los puntos livianos del mapa. */
+export type Filtrable = Pick<Intervention, "status" | "type" | "neighborhoodId" | "neighborhood" | "date" | "street"> & {
+  reference?: string | null;
+};
+
 /** Filtro común (servidor y cliente) para intervenciones. */
-export function filterInterventions(items: Intervention[], q: InterventionsQuery = {}): Intervention[] {
+export function filterInterventions<T extends Filtrable>(items: T[], q: InterventionsQuery = {}): T[] {
   const from = q.from ? Date.parse(q.from) : null;
   const to = q.to ? Date.parse(q.to) : null;
   const out = items.filter((it) => {
@@ -24,7 +29,8 @@ export function filterInterventions(items: Intervention[], q: InterventionsQuery
     if (q.q && !matchesQuery([it.street, it.reference ?? "", it.neighborhood], q.q)) return false;
     return true;
   });
-  return q.limit ? out.slice(0, q.limit) : out;
+  const desde = q.offset ?? 0;
+  return q.limit ? out.slice(desde, desde + q.limit) : desde ? out.slice(desde) : out;
 }
 
 /**

@@ -3,14 +3,13 @@ import { Container } from "@/components/ui/primitives";
 import { MyNeighborhood } from "./MyNeighborhood";
 
 export async function MyNeighborhoodSection() {
-  const { neighborhoods, interventions, closures, mode } = await getPortalData();
+  const { neighborhoods, closures, mode } = await getPortalData();
   if (!neighborhoods.ok) return null;
   return (
     <section id="mi-barrio" aria-labelledby="barrio-title" className="pt-20 sm:pt-28">
       <Container>
         <MyNeighborhood
           neighborhoods={neighborhoods.data}
-          interventions={interventions.ok ? interventions.data : []}
           closures={closures.ok ? closures.data : []}
           mode={mode}
         />

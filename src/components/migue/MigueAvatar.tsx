@@ -18,7 +18,7 @@ export function MigueAvatar({ size = 44, ring = true }: { size?: number; ring?: 
       data-placeholder={url ? undefined : "migue-avatar"}
     >
       {url ? (
-        <Image src={url} alt="" width={size * 2} height={size * 2} className="size-full object-cover object-top" />
+        <Image src={url} alt="" width={size * 2} height={size * 2} loading="eager" className="size-full object-cover object-top" />
       ) : (
         <MessageCircleMore aria-hidden style={{ width: size * 0.5, height: size * 0.5 }} />
       )}

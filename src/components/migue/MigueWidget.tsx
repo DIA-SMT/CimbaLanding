@@ -112,7 +112,17 @@ export function MigueWidget() {
   }, [open, close]);
 
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
+    const log = logRef.current;
+    if (!log) return;
+    // Al llegar una respuesta, se muestra desde su comienzo: en el celular, con
+    // fichas debajo, ir al final dejaba el texto fuera de la vista.
+    const ultimo = log.lastElementChild as HTMLElement | null;
+    const esRespuesta = messages.at(-1)?.role === "migue" && !busy;
+    const top =
+      esRespuesta && ultimo
+        ? log.scrollTop + ultimo.getBoundingClientRect().top - log.getBoundingClientRect().top - 12
+        : log.scrollHeight;
+    log.scrollTo({ top, behavior: "smooth" });
   }, [messages, busy]);
 
   const openCard = (c: MigueCard) => {

@@ -134,11 +134,18 @@ const punto = (lon: number, lat: number) =>
 /** Una sola conexión (pool chico) por proceso, también entre recargas en desarrollo. */
 const globalPool = globalThis as unknown as { __cimbaPublico?: ReturnType<typeof postgres> };
 
+/**
+ * El rol cimba_publico admite 5 conexiones en total. El portal en marcha usa
+ * hasta 2 y la compilación 1, así un despliegue (que convive con el portal
+ * vivo) nunca se queda sin conexión y no publica una portada vacía.
+ */
+const MAX_CONEXIONES = process.env.NEXT_PHASE === "phase-production-build" ? 1 : 2;
+
 function conexion(url: string) {
   if (!globalPool.__cimbaPublico) {
     globalPool.__cimbaPublico = postgres(url, {
-      max: 3,
-      idle_timeout: 30,
+      max: MAX_CONEXIONES,
+      idle_timeout: 20,
       connect_timeout: 10,
       prepare: false,
       onnotice: () => {},

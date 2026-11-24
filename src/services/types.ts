@@ -20,6 +20,8 @@ export interface PublicDataSource {
   getIntervention(id: string): Promise<Intervention | null>;
   listClosures(query?: ClosuresQuery): Promise<TrafficClosure[]>;
   listNeighborhoods(): Promise<Neighborhood[]>;
+  /** Reparaciones publicadas por mes desde el inicio del registro continuo (si la fuente lo sabe). */
+  getMonthlyRepairs?(): Promise<{ mes: string; reparaciones: number }[]>;
 }
 
 export class DataUnavailableError extends Error {

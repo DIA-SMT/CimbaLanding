@@ -62,7 +62,8 @@ Qué podés hacer:
 - Explicar los estados que muestra el portal:
 ${ESTADOS}
 - Explicar cómo hacer un reclamo: el vecino ya está en el portal, así que se hace acá mismo, en la sección Reclamos, con su cuenta de Ciudad Digital; queda registrado en CiDiTuc (Atención Ciudadana, 147). Vos no tomás reclamos ni podés ver reclamos de nadie.
-- El mapa y las fichas muestran los trabajos de los últimos ${ventanaDias()} días; el indicador de reparaciones es el total histórico publicado.
+- Contar cómo evolucionaron las reparaciones mes a mes (herramienta evolucion_mensual).
+- El mapa y las fichas muestran los trabajos de los últimos ${ventanaDias()} días. El indicador de reparaciones cuenta todo lo publicado desde que CIMBA empezó a registrar; no hay datos de años anteriores a ese inicio, así que no se puede comparar con otros años.
 
 Cómo buscar:
 - Si te nombran una calle (con o sin altura), buscala directo con buscar_intervenciones usando sólo el nombre de la calle. No pidas el barrio antes de buscar; pedilo sólo si no aparece nada.
@@ -71,6 +72,8 @@ Cómo buscar:
 Reglas que no se negocian:
 - Todo dato (cantidades, calles, fechas, estados, empresas) sale de una herramienta en esta conversación. Nunca inventes ni completes de memoria. Si la herramienta no trae nada, decilo y sugerí probar con otro nombre de calle o con el barrio.
 - Sólo hablás de lo que está publicado en este portal. No tenés ni das información interna de la Municipalidad ni de CIMBA: reclamos o pedidos de vecinos, datos personales, órdenes de trabajo, contratos, licitaciones, costos, presupuestos, personal o funcionarios, prioridades internas, otras pantallas o sistemas. Si te lo piden, respondé con amabilidad que eso no está publicado en el portal y, si sirve, ofrecé el 147.
+- No expliques las cifras con causas propias: usá sólo las aclaraciones que traen las herramientas.
+- No evaluás la gestión ni opinás de política (si mejoró o empeoró, de quién es el mérito o la culpa). Mostrás los números con sus aclaraciones y dejás que el vecino saque sus conclusiones.
 - No prometés plazos ni decís cuándo se va a arreglar algo: informás lo publicado (por ejemplo, que figura como Programado o Detectado).
 - Si la consulta no es vial, decí que acá sólo manejás la información vial del portal; para otros temas, el 147 o el sitio oficial de la Municipalidad.
 - No pidas datos personales. Si alguien comparte uno, no lo repitas y recordale que no hace falta.
@@ -123,6 +126,15 @@ const HERRAMIENTAS = [
     function: {
       name: "resumen_general",
       description: "Indicadores públicos de la ciudad: reparaciones publicadas, intervenciones en ejecución y barrios con trabajos.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "evolucion_mensual",
+      description:
+        "Reparaciones publicadas por mes desde que CIMBA empezó a registrarlas, con aclaraciones para interpretarlas. Para preguntas de evolución, tendencia o comparación en el tiempo.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
     },
   },
@@ -258,12 +270,30 @@ async function ejecutar(nombre: string, args: Record<string, unknown>, extras: E
       const s = await fuente.getSummary();
       return {
         reparaciones_publicadas_total: s.completed,
-        ...(s.completedSince ? { desde: formatDate(s.completedSince) } : {}),
-        intervenciones_en_ejecucion_ahora: s.inProgress,
+        ...(s.completedSince ? { desde_el_inicio_del_registro: formatDate(`${s.completedSince}T12:00:00-03:00`) } : {}),
+        obras_en_ejecucion_ahora: s.inProgress,
         barrios_con_algun_trabajo_publicado: s.neighborhoodsWithInterventions,
-        nota: "La cantidad de barrios cuenta cualquier trabajo publicado (reparado, en ejecución, programado o detectado); no es la cantidad de barrios con obras en ejecución. No los relaciones.",
+        nota: "Son tres cifras independientes: las reparaciones ya terminadas, las obras que están en ejecución ahora (no forman parte de las terminadas) y los barrios con cualquier trabajo publicado. No las relaciones entre sí.",
         cortes_vigentes: s.activeClosures ?? "sin información de cortes publicada",
         actualizado: formatDateTime(s.updatedAt),
+      };
+    }
+
+    case "evolucion_mensual": {
+      const meses = fuente.getMonthlyRepairs ? await fuente.getMonthlyRepairs() : [];
+      if (!meses.length) return { disponible: false, motivo: "La evolución mensual no está publicada en este momento." };
+      const nombre = (ym: string) =>
+        new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${ym}-15T12:00:00Z`));
+      const actual = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Tucuman", year: "numeric", month: "2-digit" }).format(new Date());
+      const inicio = nombre(meses[0]!.mes);
+      return {
+        inicio_del_registro: inicio,
+        meses: meses.map((m) => ({ mes: nombre(m.mes), reparaciones: m.reparaciones, ...(m.mes === actual ? { mes_en_curso: true } : {}) })),
+        aclaraciones: [
+          `CIMBA empezó a registrar reparaciones en ${inicio}: no hay datos de años anteriores, por eso no se puede comparar con otros años.`,
+          "El mes en curso todavía no terminó y las cargas de los últimos días pueden completarse más adelante.",
+          "En los primeros meses, parte del aumento refleja que más cuadrillas y empresas empezaron a cargar sus trabajos en el sistema, no sólo más obras.",
+        ],
       };
     }
 

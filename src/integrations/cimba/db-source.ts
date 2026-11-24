@@ -72,6 +72,33 @@ interface FilaResumen {
   generado_en: Date;
 }
 
+/** Reparaciones publicadas por mes (hora de Tucumán). */
+export interface FilaMes {
+  mes: string; // YYYY-MM
+  n: number;
+  primera: string; // YYYY-MM-DD
+}
+
+/**
+ * Un mes cuenta como inicio del registro cuando tiene al menos esta cantidad
+ * de reparaciones. Evita que una fecha mal cargada (hay una de 2006) o unas
+ * pocas pruebas sueltas hagan decir "desde 2006" cuando CIMBA empezó en 2026.
+ */
+export const MINIMO_MES_CONSISTENTE = 20;
+
+/** Desde cuándo hay registro continuo, cuántas reparaciones hay desde entonces y la serie mensual. */
+export function inicioRegistros(meses: FilaMes[], minimo = MINIMO_MES_CONSISTENTE) {
+  const i = meses.findIndex((m) => Number(m.n) >= minimo);
+  if (i < 0) return null;
+  const serie = meses.slice(i).map((m) => ({ mes: m.mes, reparaciones: Number(m.n) }));
+  return {
+    desde: meses[i]!.primera,
+    total: serie.reduce((s, m) => s + m.reparaciones, 0),
+    meses: serie,
+    sueltasAnteriores: meses.slice(0, i).reduce((s, m) => s + Number(m.n), 0),
+  };
+}
+
 /** Igual que `grupoDe` de CIMBA (apps/web/src/lib/avance.ts). */
 function grupoDe(tipo: string | null): "calzada" | "agua" | "otro" {
   switch (tipo) {
@@ -127,11 +154,14 @@ export interface FilasPublicas {
   problemas: FilaProblema[];
   barrios: FilaBarrio[];
   resumen: FilaResumen[];
+  /** Si viene, el total y el "desde" salen del registro continuo (ver inicioRegistros). */
+  meses?: FilaMes[];
 }
 
 /** Convierte las filas de las vistas al modelo público (función pura, sin base). */
 export function filasAAvance(filas: FilasPublicas, cfg: Omit<DbConfig, "url">): AdaptedAvance {
   const { trabajos, obras, problemas, barrios, resumen } = filas;
+  const inicio = filas.meses ? inicioRegistros(filas.meses) : null;
   const datos: DatosAvance = {
     generadoEn: (resumen[0]?.generado_en ?? new Date()).toISOString(),
     hechos: {
@@ -177,7 +207,9 @@ export function filasAAvance(filas: FilasPublicas, cfg: Omit<DbConfig, "url">): 
       })),
     },
     cifras: {
-      total: { n: Number(resumen[0]?.reparaciones ?? 0), desde: resumen[0]?.desde ?? null },
+      total: inicio
+        ? { n: inicio.total, desde: inicio.desde }
+        : { n: Number(resumen[0]?.reparaciones ?? 0), desde: resumen[0]?.desde ?? null },
       ahora: { obras: obras.length },
     },
   };
@@ -205,14 +237,15 @@ export function filasAAvance(filas: FilasPublicas, cfg: Omit<DbConfig, "url">): 
 }
 
 export function createCimbaDbSource(cfg: DbConfig): PublicDataSource {
-  let memo: { at: number; value: Promise<AdaptedAvance> } | null = null;
+  type Cargado = AdaptedAvance & { meses: { mes: string; reparaciones: number }[] };
+  let memo: { at: number; value: Promise<Cargado> } | null = null;
 
-  const leer = async (): Promise<AdaptedAvance> => {
+  const leer = async (): Promise<Cargado> => {
     const sql = conexion(cfg.url);
     const ventana = cfg.windowDays > 0 ? sql`where fecha >= now() - make_interval(days => ${cfg.windowDays})` : sql``;
-    let trabajos: FilaTrabajo[], obras: FilaObra[], problemas: FilaProblema[], barrios: FilaBarrio[], resumen: FilaResumen[];
+    let trabajos: FilaTrabajo[], obras: FilaObra[], problemas: FilaProblema[], barrios: FilaBarrio[], resumen: FilaResumen[], meses: FilaMes[];
     try {
-      [trabajos, obras, problemas, barrios, resumen] = await Promise.all([
+      [trabajos, obras, problemas, barrios, resumen, meses] = await Promise.all([
         sql<FilaTrabajo[]>`
           select id, to_char(fecha at time zone 'America/Argentina/Tucuman', 'YYYY-MM-DD') as dia,
                  tipo, m2, empresa, direccion, lon, lat, barrio_id,
@@ -225,16 +258,22 @@ export function createCimbaDbSource(cfg: DbConfig): PublicDataSource {
         sql<FilaProblema[]>`select id, estado, tipo, lon, lat from publico.problemas`,
         sql<FilaBarrio[]>`select id, nombre, contorno from publico.barrios`,
         sql<FilaResumen[]>`select reparaciones, desde, generado_en from publico.resumen`,
+        sql<FilaMes[]>`
+          select to_char(fecha at time zone 'America/Argentina/Tucuman', 'YYYY-MM') as mes,
+                 count(*)::int as n,
+                 min(to_char(fecha at time zone 'America/Argentina/Tucuman', 'YYYY-MM-DD')) as primera
+            from publico.trabajos group by 1 order by 1`,
       ]);
     } catch (err) {
       logger.error("cimba.db: no se pudo leer las vistas públicas", err);
       throw new DataUnavailableError("No se pudo leer la información pública de CIMBA");
     }
 
-    return filasAAvance({ trabajos, obras, problemas, barrios, resumen }, cfg);
+    const avance = filasAAvance({ trabajos, obras, problemas, barrios, resumen, meses }, cfg);
+    return { ...avance, meses: inicioRegistros(meses)?.meses ?? [] };
   };
 
-  const load = (): Promise<AdaptedAvance> => {
+  const load = (): Promise<Cargado> => {
     if (memo && Date.now() - memo.at < 60_000) return memo.value;
     const value = leer().catch((e) => {
       memo = null;
@@ -260,6 +299,9 @@ export function createCimbaDbSource(cfg: DbConfig): PublicDataSource {
     },
     async listNeighborhoods() {
       return (await load()).neighborhoods;
+    },
+    async getMonthlyRepairs() {
+      return (await load()).meses;
     },
   };
 }

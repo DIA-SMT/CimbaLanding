@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, Construction, Loader2, MapPin, SendHorizonal, TriangleAlert, X } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { goToMap } from "@/hooks/useExplorer";
-import { MIGUE_STARTERS, type MigueCard, type MigueReply } from "@/lib/migue/types";
+import { MIGUE_STARTERS, type MigueCard, type MigueReply, type MigueTurno } from "@/lib/migue/types";
 import { MigueAvatar } from "./MigueAvatar";
 import { MIGUE_OPEN_EVENT } from "./events";
 
@@ -62,6 +62,13 @@ export function MigueWidget() {
     async (text: string) => {
       const message = text.trim().slice(0, 400);
       if (!message || busy) return;
+      // Contexto para que Migue entienda "¿y en ese barrio?": últimos turnos, sólo texto.
+      const historial = messages
+        .slice(1)
+        .flatMap((m): MigueTurno[] =>
+          m.role === "user" ? [{ rol: "vecino", texto: m.text }] : m.role === "migue" ? [{ rol: "migue", texto: m.data.reply.slice(0, 1500) }] : [],
+        )
+        .slice(-8);
       setMessages((m) => [...m, { id: seq++, role: "user", text: message }]);
       setInput("");
       setBusy(true);
@@ -69,7 +76,7 @@ export function MigueWidget() {
         const res = await fetch("/api/migue", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, historial }),
         });
         const body = await res.json().catch(() => null);
         if (!res.ok || !body) throw new Error(body?.error?.message ?? "No pude responder en este momento.");
@@ -80,7 +87,7 @@ export function MigueWidget() {
         setBusy(false);
       }
     },
-    [busy],
+    [busy, messages],
   );
 
   useEffect(() => {

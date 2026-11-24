@@ -80,6 +80,29 @@ export async function answer(message: string): Promise<MigueReply> {
       };
     }
 
+    // Charla: cómo estás, gracias, chau, quién sos.
+    if (/\b(todo bien|como (estas|andas|va|te va)|que tal|como anda)\b/.test(t) && t.split(" ").length <= 6) {
+      return {
+        ...base,
+        reply: "¡Todo bien, gracias por preguntar! Acá ando, listo para ayudarte. ¿Querés saber qué se hizo en tu calle o en tu barrio?",
+        suggestions: MIGUE_STARTERS.slice(1, 4),
+      };
+    }
+    if (/^(gracias|muchas gracias|genial|perfecto|buenisimo|ok|dale|listo)\b/.test(t) && t.split(" ").length <= 5) {
+      return { ...base, reply: "¡De nada! Si necesitás algo más sobre las calles de la ciudad, acá estoy." };
+    }
+    if (/^(chau|adios|nos vemos|hasta luego)\b/.test(t)) {
+      return { ...base, reply: "¡Chau! Que andes bien. Cuando quieras, volvé a consultarme." };
+    }
+    if (/\b(quien sos|que sos|sos un (bot|robot)|sos humano)\b/.test(t)) {
+      return {
+        ...base,
+        reply:
+          "Soy Migue, el asistente virtual de la Municipalidad. En este portal te ayudo con información vial publicada: reparaciones por calle o barrio, cortes de tránsito y cómo hacer un reclamo.",
+        suggestions: MIGUE_STARTERS,
+      };
+    }
+
     // Saludo / ayuda
     if (/^(hola|buen|buenas|hey|ayuda|que podes|que sabes)/.test(t) || t.length < 3) {
       return {
@@ -172,7 +195,7 @@ export async function answer(message: string): Promise<MigueReply> {
       if (items.length) {
         return {
           ...base,
-          reply: `Encontré ${items.length === 10 ? "10 o más" : items.length} intervención${items.length > 1 ? "es" : ""} publicada${items.length > 1 ? "s" : ""} que coinciden con “${q}”.${demoTail}`,
+          reply: `Encontré ${items.length === 10 ? "10 o más" : items.length} ${items.length > 1 ? "intervenciones" : "intervención"} publicada${items.length > 1 ? "s" : ""} que coinciden con “${q}”.${demoTail}`,
           cards: items.slice(0, 4).map(toInterventionCard),
           links: [{ label: "Ver resultados en el mapa", href: `#mapa?q=${encodeURIComponent(q)}` }],
         };

@@ -1,8 +1,16 @@
 import { z } from "zod";
 import type { DataMode } from "@/domain/schemas";
 
+/** Turnos anteriores de la conversación (los manda el navegador: sólo texto, acotado). */
+export const migueTurnoSchema = z.object({
+  rol: z.enum(["vecino", "migue"]),
+  texto: z.string().trim().min(1).max(1500),
+});
+export type MigueTurno = z.infer<typeof migueTurnoSchema>;
+
 export const migueRequestSchema = z.object({
   message: z.string().trim().min(1).max(400),
+  historial: z.array(migueTurnoSchema).max(10).optional(),
 });
 
 export interface MigueCard {

@@ -48,7 +48,7 @@ let cached: PublicDataSource | null = null;
 /** Ventanas que acepta CIMBA (avance-tipos.ts → VENTANAS). 0 = todo. */
 const VENTANAS = new Set([1, 7, 30, 90, 0]);
 
-function ventanaDias(): number {
+export function ventanaDias(): number {
   const dias = Number(process.env.CIMBA_VENTANA_DIAS ?? 90);
   return VENTANAS.has(dias) ? dias : 90;
 }

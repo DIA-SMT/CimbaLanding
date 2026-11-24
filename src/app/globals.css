@@ -187,3 +187,8 @@ body {
 html[data-cidituc-abierto] [data-migue-launcher] {
   display: none;
 }
+
+/* Con la tarjeta de chat de la sección de Migue a la vista, la burbuja sobra. */
+html[data-migue-seccion] [data-migue-launcher] {
+  display: none;
+}

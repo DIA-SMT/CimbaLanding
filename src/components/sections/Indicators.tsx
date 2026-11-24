@@ -44,7 +44,7 @@ export async function Indicators() {
         {CARDS.map(({ key, label, icon: Icon, bg, fg, ring }, idx) => (
           <li
             key={key}
-            className={`${idx === CARDS.length - 1 ? "col-span-2 sm:col-span-1" : ""} flex flex-col items-start gap-3 rounded-[var(--radius-card)] ${bg} p-4 sm:flex-row sm:items-center sm:gap-4 shadow-[var(--shadow-soft)] ring-1 ${ring} transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:p-5`}
+            className={`${idx === CARDS.length - 1 ? "col-span-2 flex-row items-center sm:col-span-1" : "flex-col items-start"} flex gap-3 rounded-[var(--radius-card)] ${bg} p-4 sm:flex-row sm:items-center sm:gap-4 shadow-[var(--shadow-soft)] ring-1 ${ring} transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:p-5`}
           >
             <span className={`grid size-11 shrink-0 place-items-center rounded-full bg-white/80 ${fg} shadow-sm sm:size-14`}>
               <Icon className="size-6 sm:size-7" strokeWidth={2.2} aria-hidden />

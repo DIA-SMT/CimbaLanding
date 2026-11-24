@@ -9,6 +9,9 @@ import { distanceKm, formatDate } from "@/lib/format";
 import { goToMap } from "@/hooks/useExplorer";
 import { DataModeBadge } from "@/components/ui/primitives";
 
+/** Etiquetas de los contadores. "Progra­mados" lleva guion opcional: en celulares angostos no entra entero. */
+const CONTADOR = { finalizado: "Reparados", en_ejecucion: "En curso", programado: "Progra­mados" } as const;
+
 const KEY = "cimba:mi-barrio";
 
 function readSaved(): string | null {
@@ -194,7 +197,7 @@ export function MyNeighborhood({
                   {(["finalizado", "en_ejecucion", "programado"] as const).map((s) => (
                     <li key={s} className={`rounded-2xl ${STATUS_META[s].bg} p-3 sm:p-4`}>
                       <span className="block text-2xl font-extrabold sm:text-3xl">{cargandoBarrio ? "…" : count(s)}</span>
-                      <span className={`text-xs font-bold sm:text-sm ${STATUS_META[s].text}`}>{s === "en_ejecucion" ? "En curso" : STATUS_META[s].label + "s"}</span>
+                      <span className={`text-xs font-bold sm:text-sm ${STATUS_META[s].text}`}>{CONTADOR[s]}</span>
                     </li>
                   ))}
                 </ul>

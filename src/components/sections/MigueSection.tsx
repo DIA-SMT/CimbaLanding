@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { ArrowRight, Lock, MapPinned, Megaphone, MessageSquareText, Route, TrendingUp } from "lucide-react";
 import { MigueAvatar } from "@/components/migue/MigueAvatar";
 import { openMigue } from "@/components/migue/events";
@@ -14,6 +15,26 @@ const CAPS = [
 ];
 
 export function MigueSection() {
+  /**
+   * Mientras la tarjeta de chat de esta sección está a la vista, la burbuja
+   * flotante sobra (y en el celular tapaba "Abrir chat con Migue"): se oculta
+   * y vuelve sola al seguir bajando o subiendo.
+   */
+  const tarjetaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = tarjetaRef.current;
+    if (!el) return;
+    const raiz = document.documentElement;
+    const io = new IntersectionObserver(([e]) => raiz.toggleAttribute("data-migue-seccion", Boolean(e?.isIntersecting)), {
+      threshold: 0.25,
+    });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      raiz.removeAttribute("data-migue-seccion");
+    };
+  }, []);
+
   return (
     <section id="migue" aria-labelledby="migue-sec-title" className="pt-20 sm:pt-28">
       <Container>
@@ -42,7 +63,7 @@ export function MigueSection() {
             </p>
           </div>
 
-          <div className="relative rounded-[1.6rem] bg-[linear-gradient(160deg,#0b377f,#0876ec)] p-5 sm:p-7">
+          <div ref={tarjetaRef} className="relative rounded-[1.6rem] bg-[linear-gradient(160deg,#0b377f,#0876ec)] p-5 sm:p-7">
             <div className="flex items-center gap-3 text-white">
               <MigueAvatar size={52} />
               <div>

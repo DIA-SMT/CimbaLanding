@@ -14,7 +14,7 @@ export const migueRequestSchema = z.object({
 });
 
 export interface MigueCard {
-  kind: "intervention" | "closure";
+  kind: "intervention";
   id: string;
   title: string;
   subtitle: string;
@@ -30,7 +30,7 @@ export interface MigueReply {
 }
 
 export const MIGUE_STARTERS = [
-  "¿Qué cortes de tránsito hay hoy?",
+  "¿Cómo vienen las reparaciones este año?",
   "¿Qué se hizo en Villa 9 de Julio?",
   "¿Qué se arregló en Av. Mate de Luna?",
   "¿Cómo hago un reclamo?",

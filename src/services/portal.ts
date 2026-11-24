@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
-import type { DataMode, Intervention, Neighborhood, Summary, TrafficClosure } from "@/domain/schemas";
+import type { DataMode, Intervention, Neighborhood, Summary } from "@/domain/schemas";
 import { getDataSource } from "@/services";
 import { logger } from "@/lib/logger";
 import { DataUnavailableError } from "@/services/types";
@@ -21,18 +21,16 @@ export interface PortalData {
   mode: DataMode;
   summary: Loaded<Summary>;
   interventions: Loaded<Intervention[]>;
-  closures: Loaded<TrafficClosure[]>;
   neighborhoods: Loaded<Neighborhood[]>;
 }
 
 /** Carga única por request (React cache) compartida por todas las secciones del servidor. */
 export const getPortalData = cache(async (): Promise<PortalData> => {
   const src = getDataSource();
-  const [summary, interventions, closures, neighborhoods] = await Promise.all([
+  const [summary, interventions, neighborhoods] = await Promise.all([
     safe("resumen", () => src.getSummary()),
     safe("intervenciones", () => src.listInterventions()),
-    safe("cortes", () => src.listClosures()),
     safe("barrios", () => src.listNeighborhoods()),
   ]);
-  return { mode: src.mode, summary, interventions, closures, neighborhoods };
+  return { mode: src.mode, summary, interventions, neighborhoods };
 });

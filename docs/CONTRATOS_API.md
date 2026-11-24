@@ -54,8 +54,10 @@ permitidos (`CIMBA_FOTOS_ORIGENES`).
 
 ## 3. Lo que CIMBA no tiene
 
-- **Cortes de tránsito**: CIMBA no los registra. La sección y el indicador quedan en
-  “no disponible” hasta integrar la fuente oficial de la Municipalidad.
+- **Cortes de tránsito**: fuera del portal por ahora (decisión de noviembre de 2026): son
+  tema de otro Migue / otra área. Se sacaron la sección, la capa del mapa, el indicador, la
+  API pública y la herramienta de Migue; el modelo de datos (`TrafficClosure`, `listClosures`)
+  queda en el código para reconectarlo si hiciera falta.
 - **Fecha de los problemas en agenda**: la versión pública no la incluye; se muestra
   “sin fecha confirmada”.
 - **Dirección de los problemas en agenda**: la versión pública la oculta; se ubica por
@@ -71,7 +73,6 @@ El navegador nunca llama a CIMBA. Consulta `/api/public/*` del portal
 | `/api/public/summary` | — | `Summary` |
 | `/api/public/interventions` | `q`, `status`, `type`, `neighborhood`, `from`, `to`, `limit` | `Intervention[]` |
 | `/api/public/interventions/:id` | `id` | `Intervention` |
-| `/api/public/traffic-closures` | `status`, `neighborhood` | `TrafficClosure[]` (503 en modo live) |
 | `/api/public/neighborhoods` | — | `Neighborhood[]` |
 
 Respuesta: `{ data, meta: { mode: "live" | "demo" | "unavailable", updatedAt, notice } }`.

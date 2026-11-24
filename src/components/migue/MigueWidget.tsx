@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUpRight, Construction, Loader2, MapPin, SendHorizonal, TriangleAlert, X } from "lucide-react";
+import { ArrowUpRight, Loader2, MapPin, SendHorizonal, TriangleAlert, X } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { goToMap } from "@/hooks/useExplorer";
 import { MIGUE_STARTERS, type MigueCard, type MigueReply, type MigueTurno } from "@/lib/migue/types";
@@ -21,7 +21,7 @@ const WELCOME: Msg = {
   role: "migue",
   data: {
     reply:
-      "¡Hola! Soy Migue, el asistente de la Municipalidad. Puedo ayudarte a buscar reparaciones por calle o barrio, consultar cortes de tránsito y orientarte para hacer un reclamo.",
+      "¡Hola! Soy Migue, el asistente de la Municipalidad. Puedo ayudarte a buscar reparaciones por calle o barrio, contarte cómo vienen los trabajos y orientarte para hacer un reclamo.",
     cards: [],
     links: [],
     suggestions: MIGUE_STARTERS,
@@ -211,12 +211,8 @@ export function MigueWidget() {
                           onClick={() => openCard(c)}
                           className="flex w-full items-start gap-3 rounded-2xl border border-line bg-white p-3 text-left transition hover:border-primary/40 hover:shadow-[var(--shadow-soft)]"
                         >
-                          <span
-                            className={`grid size-9 shrink-0 place-items-center rounded-xl ${
-                              c.kind === "closure" ? "bg-corte-bg text-corte" : "bg-tono-azul text-primary"
-                            }`}
-                          >
-                            {c.kind === "closure" ? <Construction className="size-4" aria-hidden /> : <MapPin className="size-4" aria-hidden />}
+                          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-tono-azul text-primary">
+                            <MapPin className="size-4" aria-hidden />
                           </span>
                           <span className="min-w-0">
                             <span className="block text-[0.92rem] font-bold text-ink">{c.title}</span>

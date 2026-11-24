@@ -4,7 +4,7 @@ import { Container, EmptyState, SectionHeading } from "@/components/ui/primitive
 import { MapExplorer } from "@/components/map/MapExplorer";
 
 export async function MapSection() {
-  const { interventions, closures, neighborhoods, mode } = await getPortalData();
+  const { interventions, neighborhoods, mode } = await getPortalData();
   return (
     <section id="mapa" aria-labelledby="mapa-title" className="scroll-mt-20 pt-20 sm:pt-24">
       <Container>
@@ -12,11 +12,10 @@ export async function MapSection() {
           id="mapa-title"
           eyebrow="Mapa interactivo"
           title="Explorá las intervenciones en la ciudad"
-          description="Buscá tu calle o barrio, filtrá por estado, tipo o fecha y tocá un punto para ver su ficha. Los cortes de tránsito se muestran como líneas punteadas."
+          description="Buscá tu calle o barrio, filtrá por estado, tipo o fecha y tocá un punto para ver su ficha."
         />
         {interventions.ok ? (
           <MapExplorer
-            closures={closures.ok ? closures.data : []}
             neighborhoods={neighborhoods.ok ? neighborhoods.data : []}
             mode={mode}
           />

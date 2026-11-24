@@ -9,7 +9,6 @@ import { Indicators, IndicatorsSkeleton } from "@/components/sections/Indicators
 import { Highlights } from "@/components/sections/Highlights";
 import { MapSection, MapSectionSkeleton } from "@/components/sections/MapSection";
 import { InterventionsSection } from "@/components/sections/InterventionsSection";
-import { ClosuresSection } from "@/components/sections/ClosuresSection";
 import { MyNeighborhoodSection } from "@/components/sections/MyNeighborhoodSection";
 import { HowItWorks } from "@/components/sections/HowItWorks";
 import { MigueSection } from "@/components/sections/MigueSection";
@@ -53,9 +52,6 @@ export default function Home() {
         </Suspense>
         <Suspense fallback={<SectionSkeleton />}>
           <InterventionsSection />
-        </Suspense>
-        <Suspense fallback={<SectionSkeleton />}>
-          <ClosuresSection />
         </Suspense>
         <Suspense fallback={<SectionSkeleton h={360} />}>
           <MyNeighborhoodSection />

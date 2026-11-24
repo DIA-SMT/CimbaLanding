@@ -17,7 +17,7 @@ export const siteConfig = {
   tagline: "Información pública sobre el estado de las calles",
   institution: "Municipalidad de San Miguel de Tucumán",
   description:
-    "Conocé las reparaciones, los trabajos en curso y los cortes de tránsito en San Miguel de Tucumán.",
+    "Conocé las reparaciones y los trabajos en curso en las calles de San Miguel de Tucumán.",
 
   assets: {
     /** Logotipo oficial (versión positiva, para fondos claros). */
@@ -47,7 +47,6 @@ export const siteConfig = {
   /** Canales oficiales. `null` = pendiente de confirmación por el área responsable. */
   channels: {
     municipalSite: "https://smt.gob.ar/",
-    trafficClosuresOfficialUrl: null as string | null,
     /** Sistema CIMBA y su tablero público de avance (sólo responde con AVANCE_PUBLICO=1). */
     cimbaSite: "https://cimba.smt.gob.ar",
     cimbaAvancePublico: "https://cimba.smt.gob.ar/publico",
@@ -98,7 +97,7 @@ export const navItems = [
   { id: "inicio", label: "Inicio" },
   { id: "mapa", label: "Mapa" },
   { id: "intervenciones", label: "Intervenciones" },
-  { id: "cortes", label: "Cortes" },
+  { id: "mi-barrio", label: "Mi barrio" },
   { id: "como-funciona", label: "Cómo funciona" },
   { id: "migue", label: "Consultas con Migue" },
 ] as const;

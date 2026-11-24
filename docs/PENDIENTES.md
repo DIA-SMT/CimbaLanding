@@ -39,7 +39,7 @@ al portal desde la app de Ciudad Digital (con `?auth=`), no sale nunca.
 | Colores | Tokens oficiales de CIMBA (`#0066FF`, `#2EB1FF`, `#F4DC00`) y semáforo de estados. | — |
 | Barrios | Capa oficial de 327 barrios copiada de CIMBA, sin propiedades internas. En modo live se usan los de `/capas`. | — |
 | Foto del hero | Panorámica real de la Catedral, del portal de Turismo SMT. | Confirmar derechos y copiarla localmente. |
-| Fuente de cortes de tránsito | **CIMBA no la tiene.** | Identificar la fuente oficial e implementar `listClosures` en una integración propia. |
+| Cortes de tránsito | **Fuera del portal por ahora** (los maneja otro Migue / otra área). | Si se retoma: fuente oficial, `listClosures` y volver a sumar sección, capa y herramienta. |
 | Contacto / accesibilidad / privacidad | Sin datos confirmados; privacidad en borrador. | Revisión legal y canal de contacto. |
 
 ## Migue

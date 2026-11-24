@@ -1,11 +1,11 @@
 import "server-only";
 
-import { DATE_LABEL, STATUS_META, kindLabel, CLOSURE_STATUS_META } from "@/domain/labels";
-import type { Intervention, InterventionStatus, Neighborhood, TrafficClosure } from "@/domain/schemas";
-import { formatDate, formatDateTime, normalize } from "@/lib/format";
+import { DATE_LABEL, STATUS_META, kindLabel } from "@/domain/labels";
+import type { Intervention, InterventionStatus, Neighborhood } from "@/domain/schemas";
+import { formatDate, normalize } from "@/lib/format";
 import { getDataSource } from "@/services";
 import { DataUnavailableError } from "@/services/types";
-import { listClosures, neighborhoodsTool, searchInterventions, summaryTool } from "./tools";
+import { neighborhoodsTool, searchInterventions, summaryTool } from "./tools";
 import { MIGUE_STARTERS, type MigueCard, type MigueReply } from "./types";
 
 /**
@@ -29,14 +29,6 @@ const toInterventionCard = (i: Intervention): MigueCard => ({
   title: `${i.street}${i.reference ? ` ${i.reference}` : ""}`,
   subtitle: `${i.neighborhood} · ${kindLabel(i)} · ${i.date ? `${DATE_LABEL[i.status]} ${formatDate(i.date)}` : "Sin fecha confirmada"}`,
   badge: STATUS_META[i.status].label,
-});
-
-const toClosureCard = (c: TrafficClosure): MigueCard => ({
-  kind: "closure",
-  id: c.id,
-  title: c.street,
-  subtitle: `${c.section} · desde ${formatDateTime(c.startsAt)}${c.schedule ? ` · ${c.schedule}` : ""}`,
-  badge: CLOSURE_STATUS_META[c.status].label,
 });
 
 function findNeighborhood(text: string, hoods: Neighborhood[]) {
@@ -108,7 +100,7 @@ export async function answer(message: string): Promise<MigueReply> {
       return {
         ...base,
         reply:
-          "¡Hola! Soy Migue. Puedo ayudarte a consultar reparaciones por calle o barrio, ver cortes de tránsito y orientarte para hacer un reclamo. ¿Qué querés saber?",
+          "¡Hola! Soy Migue. Puedo ayudarte a consultar reparaciones por calle o barrio, contarte cómo vienen los trabajos y orientarte para hacer un reclamo. ¿Qué querés saber?",
         suggestions: MIGUE_STARTERS,
       };
     }
@@ -116,38 +108,9 @@ export async function answer(message: string): Promise<MigueReply> {
     const hoods = await neighborhoodsTool.run({});
     const hood = findNeighborhood(message, hoods);
 
-    // Cortes
-    if (/(corte|cortad|transit|desvio|cerrad|clausur)/.test(t)) {
-      const rest = freeText(t.replace(/(cortes?|cortad[ao]s?|transito|desvios?|cerrad[ao]s?|vigentes?|hoy)/g, " "));
-      let items;
-      try {
-        items = await listClosures.run({
-          barrioId: hood?.id,
-          calle: !hood && rest.length > 2 ? rest : undefined,
-        });
-      } catch (err) {
-        if (!(err instanceof DataUnavailableError)) throw err;
-        return {
-          ...base,
-          reply:
-            "Todavía no tengo información de cortes de tránsito: CIMBA registra las reparaciones, pero no los cortes, y la fuente oficial de cortes aún no está conectada a este portal. No te voy a inventar un corte ni un desvío.",
-          links: [{ label: "Sitio oficial de la Municipalidad", href: "https://smt.gob.ar/" }],
-        };
-      }
-      if (!items.length) {
-        return {
-          ...base,
-          reply: `No encontré cortes de tránsito publicados${hood ? ` en ${hood.name}` : rest ? ` para “${rest}”` : ""}. Si ves un corte que no figura acá, puede que todavía no haya sido informado.${demoTail}`,
-          links: [{ label: "Ver todos los cortes", href: "#cortes" }],
-        };
-      }
-      const vig = items.filter((c) => c.status === "vigente").length;
-      return {
-        ...base,
-        reply: `Encontré ${items.length} corte${items.length > 1 ? "s" : ""} publicado${items.length > 1 ? "s" : ""}${hood ? ` en ${hood.name}` : ""}: ${vig} vigente${vig === 1 ? "" : "s"} y ${items.length - vig} programado${items.length - vig === 1 ? "" : "s"}. Los desvíos sólo se muestran cuando fueron informados oficialmente.${demoTail}`,
-        cards: items.slice(0, 4).map(toClosureCard),
-        links: [{ label: "Ver sección de cortes", href: "#cortes" }],
-      };
+    // Cortes de tránsito: no se informan en este portal.
+    if (/(corte|cortad|transit|desvio|clausur)/.test(t)) {
+      return { ...base, reply: "Los cortes de tránsito no se informan en este portal: eso lo maneja otra área de la Municipalidad. Para consultarlos, podés llamar al 147 o entrar al sitio oficial de la Municipalidad.", links: [{ label: "Sitio oficial de la Municipalidad", href: "https://smt.gob.ar/" }] };
     }
 
     const status = detectStatus(t);
@@ -184,7 +147,7 @@ export async function answer(message: string): Promise<MigueReply> {
       const s = await summaryTool.run({});
       return {
         ...base,
-        reply: `Según los datos publicados: ${s.completed} reparaciones finalizadas, ${s.inProgress} intervenciones en curso, ${s.activeClosures} cortes vigentes y ${s.neighborhoodsWithInterventions} barrios con intervenciones registradas. Actualizado el ${formatDate(s.updatedAt)}.${demoTail}`,
+        reply: `Según los datos publicados: ${s.completed} reparaciones finalizadas, ${s.inProgress} intervenciones en curso y ${s.neighborhoodsWithInterventions} barrios con intervenciones registradas. Actualizado el ${formatDate(s.updatedAt)}.${demoTail}`,
       };
     }
 
@@ -209,7 +172,7 @@ export async function answer(message: string): Promise<MigueReply> {
 
     return {
       ...base,
-      reply: "No estoy seguro de haber entendido. Podés preguntarme por una calle, un barrio, los cortes de tránsito o cómo hacer un reclamo.",
+      reply: "No estoy seguro de haber entendido. Podés preguntarme por una calle, un barrio, cómo vienen las reparaciones o cómo hacer un reclamo.",
       suggestions: MIGUE_STARTERS,
     };
   } catch (err) {

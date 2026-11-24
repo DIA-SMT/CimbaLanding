@@ -43,7 +43,7 @@ export function Hero({ search }: { search: ReactNode }) {
             Más calles seguras y transitables
           </h1>
           <p className="mt-4 max-w-xl text-[1.05rem] leading-relaxed text-white/95 [text-shadow:0_1px_12px_rgb(4_20_60/0.5)] sm:mt-5 sm:text-xl">
-            Conocé las reparaciones, los trabajos en curso y los cortes de tránsito en nuestra ciudad.
+            Conocé las reparaciones y los trabajos en curso en las calles de nuestra ciudad.
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-7 sm:flex sm:gap-3">

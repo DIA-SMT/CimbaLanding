@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { siteConfig } from "@/config/site";
-import { interventionStatusSchema, type Intervention, type TrafficClosure } from "@/domain/schemas";
+import { interventionStatusSchema, type Intervention } from "@/domain/schemas";
 import { getDataSource } from "@/services";
 
 /**
@@ -42,24 +42,6 @@ export const searchInterventions = define({
   },
 });
 
-export const listClosures = define({
-  name: "consultar_cortes",
-  description: "Lista cortes de tránsito vigentes o programados, opcionalmente filtrados por calle o barrio.",
-  input: z.object({
-    calle: z.string().max(80).optional(),
-    barrioId: z.string().max(64).optional(),
-  }),
-  async run(i): Promise<TrafficClosure[]> {
-    const all = await getDataSource().listClosures({
-      status: ["vigente", "programado"],
-      neighborhood: i.barrioId,
-    });
-    if (!i.calle) return all;
-    const { matchesQuery } = await import("@/lib/format");
-    return all.filter((c) => matchesQuery([c.street, c.section], i.calle!));
-  },
-});
-
 export const neighborhoodsTool = define({
   name: "listar_barrios",
   description: "Devuelve los barrios con información pública disponible.",
@@ -69,7 +51,7 @@ export const neighborhoodsTool = define({
 
 export const summaryTool = define({
   name: "resumen_general",
-  description: "Indicadores públicos generales (finalizadas, en curso, cortes vigentes, barrios).",
+  description: "Indicadores públicos generales (finalizadas, en curso, barrios).",
   input: z.object({}),
   run: () => getDataSource().getSummary(),
 });
@@ -89,4 +71,4 @@ export const claimsGuidance = define({
   },
 });
 
-export const MIGUE_TOOLS = [searchInterventions, listClosures, neighborhoodsTool, summaryTool, claimsGuidance];
+export const MIGUE_TOOLS = [searchInterventions, neighborhoodsTool, summaryTool, claimsGuidance];

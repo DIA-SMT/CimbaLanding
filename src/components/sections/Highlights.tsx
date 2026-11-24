@@ -1,4 +1,4 @@
-import { ArrowRight, Construction, Megaphone, Route } from "lucide-react";
+import { ArrowRight, MapPinned, Megaphone, Route } from "lucide-react";
 import { getPortalData } from "@/services/portal";
 import { Container } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/Reveal";
@@ -32,7 +32,7 @@ function MapIllustration() {
 
 const QUICK = [
   { href: "#intervenciones", title: "Reparaciones", text: "Conocé las calles mejoradas", icon: Route, bg: "bg-tono-azul", fg: "text-tono-azul-fg" },
-  { href: "#cortes", title: "Cortes de tránsito", text: "Calles afectadas y desvíos informados", icon: Construction, bg: "bg-tono-amarillo", fg: "text-tono-amarillo-fg" },
+  { href: "#mi-barrio", title: "Mi barrio", text: "Lo que se hizo y se está haciendo cerca tuyo", icon: MapPinned, bg: "bg-tono-amarillo", fg: "text-tono-amarillo-fg" },
   { href: "#reclamos", title: "Realizá tu reclamo", text: "Cómo informar un bache o problema vial", icon: Megaphone, bg: "bg-tono-violeta", fg: "text-tono-violeta-fg" },
 ] as const;
 
@@ -59,7 +59,7 @@ export async function Highlights() {
               <div className="flex flex-col justify-center py-1 sm:py-3">
                 <h2 className="text-2xl font-extrabold tracking-tight text-ink sm:text-[1.7rem]">Mapa interactivo</h2>
                 <p className="mt-2 leading-relaxed text-ink-soft">
-                  Explorá la ciudad y visualizá las reparaciones, los trabajos en curso y los cortes de tránsito.
+                  Explorá la ciudad y visualizá las reparaciones y los trabajos en curso.
                 </p>
                 <a
                   href="#mapa"

@@ -1,12 +1,12 @@
 import "server-only";
 
-import { CLOSURE_STATUS_META, DATE_LABEL, STATUS_META, kindLabel } from "@/domain/labels";
-import type { Intervention, InterventionStatus, Neighborhood, TrafficClosure } from "@/domain/schemas";
+import { DATE_LABEL, STATUS_META, kindLabel } from "@/domain/labels";
+import type { Intervention, InterventionStatus, Neighborhood } from "@/domain/schemas";
 import { formatDate, formatDateTime, normalize } from "@/lib/format";
 import { logger } from "@/lib/logger";
 import { getDataSource, ventanaDias } from "@/services";
 import { DataUnavailableError } from "@/services/types";
-import { claimsGuidance, listClosures, neighborhoodsTool } from "./tools";
+import { claimsGuidance, neighborhoodsTool } from "./tools";
 import type { MigueCard, MigueReply, MigueTurno } from "./types";
 
 /**
@@ -58,7 +58,7 @@ Personalidad: cercano, tucumano, profesional. Hablás en español rioplatense (v
 Hoy es ${hoy}.
 
 Qué podés hacer:
-- Buscar con tus herramientas la información publicada en el portal: reparaciones e intervenciones por calle o barrio y su estado, indicadores generales y cortes de tránsito (si están publicados).
+- Buscar con tus herramientas la información publicada en el portal: reparaciones e intervenciones por calle o barrio y su estado, e indicadores generales.
 - Explicar los estados que muestra el portal:
 ${ESTADOS}
 - Explicar cómo hacer un reclamo: el vecino ya está en el portal, así que se hace acá mismo, en la sección Reclamos, con su cuenta de Ciudad Digital; queda registrado en CiDiTuc (Atención Ciudadana, 147). Vos no tomás reclamos ni podés ver reclamos de nadie.
@@ -72,6 +72,7 @@ Cómo buscar:
 Reglas que no se negocian:
 - Todo dato (cantidades, calles, fechas, estados, empresas) sale de una herramienta en esta conversación. Nunca inventes ni completes de memoria. Si la herramienta no trae nada, decilo y sugerí probar con otro nombre de calle o con el barrio.
 - Sólo hablás de lo que está publicado en este portal. No tenés ni das información interna de la Municipalidad ni de CIMBA: reclamos o pedidos de vecinos, datos personales, órdenes de trabajo, contratos, licitaciones, costos, presupuestos, personal o funcionarios, prioridades internas, otras pantallas o sistemas. Si te lo piden, respondé con amabilidad que eso no está publicado en el portal y, si sirve, ofrecé el 147.
+- Los cortes de tránsito y desvíos no están en este portal (los maneja otra área de la Municipalidad). Si preguntan, decilo y sugerí el 147 o el sitio oficial de la Municipalidad. Nunca informes ni inventes cortes o desvíos.
 - No expliques las cifras con causas propias: usá sólo las aclaraciones que traen las herramientas.
 - No evaluás la gestión ni opinás de política (si mejoró o empeoró, de quién es el mérito o la culpa). Mostrás los números con sus aclaraciones y dejás que el vecino saque sus conclusiones.
 - No prometés plazos ni decís cuándo se va a arreglar algo: informás lo publicado (por ejemplo, que figura como Programado o Detectado).
@@ -141,18 +142,6 @@ const HERRAMIENTAS = [
   {
     type: "function",
     function: {
-      name: "consultar_cortes",
-      description: "Cortes de tránsito publicados (vigentes o programados), opcionalmente por calle o barrio.",
-      parameters: {
-        type: "object",
-        properties: { calle: { type: "string" }, barrio: { type: "string" } },
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
       name: "orientar_reclamo",
       description: "Cómo hacer un reclamo vial desde el portal (CiDiTuc · Atención Ciudadana · 147).",
       parameters: { type: "object", properties: {}, additionalProperties: false },
@@ -186,28 +175,12 @@ const fichaPublica = (i: Intervention) => ({
   con_fotos: Boolean(i.photos.before || i.photos.after),
 });
 
-const corte = (c: TrafficClosure) => ({
-  calle: c.street,
-  tramo: c.section,
-  estado: CLOSURE_STATUS_META[c.status].label,
-  desde: formatDateTime(c.startsAt),
-  ...(c.schedule ? { horario: c.schedule } : {}),
-});
-
 const cardIntervencion = (i: Intervention): MigueCard => ({
   kind: "intervention",
   id: i.id,
   title: `${i.street}${i.reference ? ` ${i.reference}` : ""}`,
   subtitle: `${i.neighborhood} · ${kindLabel(i)} · ${i.date ? `${DATE_LABEL[i.status]} ${formatDate(i.date)}` : "Sin fecha confirmada"}`,
   badge: STATUS_META[i.status].label,
-});
-
-const cardCorte = (c: TrafficClosure): MigueCard => ({
-  kind: "closure",
-  id: c.id,
-  title: c.street,
-  subtitle: `${c.section} · desde ${formatDateTime(c.startsAt)}${c.schedule ? ` · ${c.schedule}` : ""}`,
-  badge: CLOSURE_STATUS_META[c.status].label,
 });
 
 interface Extras {
@@ -274,7 +247,6 @@ async function ejecutar(nombre: string, args: Record<string, unknown>, extras: E
         obras_en_ejecucion_ahora: s.inProgress,
         barrios_con_algun_trabajo_publicado: s.neighborhoodsWithInterventions,
         nota: "Son tres cifras independientes: las reparaciones ya terminadas, las obras que están en ejecución ahora (no forman parte de las terminadas) y los barrios con cualquier trabajo publicado. No las relaciones entre sí.",
-        cortes_vigentes: s.activeClosures ?? "sin información de cortes publicada",
         actualizado: formatDateTime(s.updatedAt),
       };
     }
@@ -295,24 +267,6 @@ async function ejecutar(nombre: string, args: Record<string, unknown>, extras: E
           "En los primeros meses, parte del aumento refleja que más cuadrillas y empresas empezaron a cargar sus trabajos en el sistema, no sólo más obras.",
         ],
       };
-    }
-
-    case "consultar_cortes": {
-      try {
-        let barrioId: string | undefined;
-        const nombreBarrio = texto(args.barrio, 64);
-        if (nombreBarrio) barrioId = buscarBarrio(nombreBarrio, await neighborhoodsTool.run({})).barrio?.id;
-        const items = await listClosures.run({ calle: texto(args.calle), barrioId });
-        extras.cards = items.slice(0, 4).map(cardCorte);
-        link({ label: "Ver cortes de tránsito", href: "#cortes" });
-        return { total: items.length, cortes: items.slice(0, 6).map(corte), nota: "Los desvíos sólo se informan cuando fueron publicados oficialmente." };
-      } catch (err) {
-        if (!(err instanceof DataUnavailableError)) throw err;
-        return {
-          disponible: false,
-          motivo: "La fuente oficial de cortes de tránsito todavía no está conectada al portal. No hay cortes publicados para informar.",
-        };
-      }
     }
 
     case "orientar_reclamo": {

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { FlaskConical, Info } from "lucide-react";
-import { CLOSURE_STATUS_META, STATUS_META } from "@/domain/labels";
-import type { ClosureStatus, DataMode, InterventionStatus } from "@/domain/schemas";
+import { STATUS_META } from "@/domain/labels";
+import type { DataMode, InterventionStatus } from "@/domain/schemas";
 
 export function StatusBadge({ status, className = "" }: { status: InterventionStatus; className?: string }) {
   const m = STATUS_META[status];
@@ -11,11 +11,6 @@ export function StatusBadge({ status, className = "" }: { status: InterventionSt
       {m.label}
     </span>
   );
-}
-
-export function ClosureBadge({ status }: { status: ClosureStatus }) {
-  const m = CLOSURE_STATUS_META[status];
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold ${m.bg} ${m.text}`}>{m.label}</span>;
 }
 
 export function SectionHeading({

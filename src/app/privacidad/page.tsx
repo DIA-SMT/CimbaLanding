@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <h2>Qué información publica este portal</h2>
       <p>
         CIMBA Ciudadano muestra únicamente información vial autorizada para su difusión pública: ubicación de intervenciones,
-        tipo de trabajo, estado, fechas confirmadas y cortes de tránsito. No publica datos personales de vecinos, agentes ni
+        tipo de trabajo, estado y fechas confirmadas. No publica datos personales de vecinos, agentes ni
         información administrativa interna.
       </p>
       <h2>Qué datos se tratan al navegar</h2>

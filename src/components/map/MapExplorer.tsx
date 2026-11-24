@@ -3,8 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Construction, Crosshair, ListFilter, Loader2, MapPin, RotateCcw, SlidersHorizontal } from "lucide-react";
-import type { DataMode, Intervention, InterventionStatus, InterventionType, Neighborhood, TrafficClosure } from "@/domain/schemas";
+import { Crosshair, ListFilter, Loader2, MapPin, RotateCcw, SlidersHorizontal } from "lucide-react";
+import type { DataMode, Intervention, InterventionStatus, InterventionType, Neighborhood } from "@/domain/schemas";
 import { DATE_LABEL, STATUS_META, STATUS_ORDER, TYPE_LABEL, kindLabel } from "@/domain/labels";
 import { filterInterventions } from "@/services/filters";
 import type { MapItem, MapPoint } from "@/domain/map-point";
@@ -13,7 +13,7 @@ import { useExplorer } from "@/hooks/useExplorer";
 import { PlaceSearch } from "@/components/search/PlaceSearch";
 import { buildSuggestions } from "@/lib/suggestions";
 import { DataModeBadge } from "@/components/ui/primitives";
-import { ClosureDetail, InterventionDetail } from "./DetailCard";
+import { InterventionDetail } from "./DetailCard";
 import type { MapFocus } from "./InterventionsMap";
 
 const InterventionsMap = dynamic(() => import("./InterventionsMap"), {
@@ -22,14 +22,13 @@ const InterventionsMap = dynamic(() => import("./InterventionsMap"), {
 });
 
 interface Props {
-  closures: TrafficClosure[];
   neighborhoods: Neighborhood[];
   mode: DataMode;
 }
 
 const TYPES = Object.keys(TYPE_LABEL) as InterventionType[];
 
-export function MapExplorer({ closures, neighborhoods, mode }: Props) {
+export function MapExplorer({ neighborhoods, mode }: Props) {
   const explorer = useExplorer();
   const [query, setQuery] = useState("");
   const [statuses, setStatuses] = useState<InterventionStatus[]>([]);
@@ -37,7 +36,6 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
   const [hood, setHood] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [showClosures, setShowClosures] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [focus, setFocus] = useState<MapFocus | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -81,7 +79,7 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
 
   // Ficha completa del punto elegido.
   useEffect(() => {
-    if (!selectedId || closures.some((c) => c.id === selectedId)) {
+    if (!selectedId) {
       setDetalle(null);
       return;
     }
@@ -95,7 +93,7 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
     return () => {
       vivo = false;
     };
-  }, [selectedId, closures]);
+  }, [selectedId]);
 
   // Carga diferida del mapa cuando la sección se acerca al viewport.
   useEffect(() => {
@@ -119,13 +117,7 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
     [interventions, query, statuses, type, hood, from, to],
   );
 
-  const visibleClosures = useMemo(
-    () => closures.filter((c) => c.status !== "finalizado" && (!hood || c.neighborhoodId === hood)),
-    [closures, hood],
-  );
-
   const selectedIntervention = detalle && detalle.id === selectedId ? detalle : null;
-  const selectedClosure = closures.find((c) => c.id === selectedId) ?? null;
 
   const focusOn = (lat: number, lng: number, zoom?: number) => setFocus({ lat, lng, zoom, key: ++focusKey.current });
 
@@ -133,13 +125,7 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
     setSelectedId(id);
     if (!id) return;
     const it = interventions.find((i) => i.id === id);
-    if (it) return focusOn(it.location.lat, it.location.lng);
-    const c = closures.find((x) => x.id === id);
-    if (c) {
-      setShowClosures(true);
-      const [lng, lat] = c.path[0];
-      focusOn(lat, lng, 16);
-    }
+    if (it) focusOn(it.location.lat, it.location.lng);
   };
 
   // Pedidos externos (hero, Migue, Mi barrio, tarjetas)
@@ -222,15 +208,13 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
 
   const detail = selectedIntervention ? (
     <InterventionDetail item={selectedIntervention} onClose={() => setSelectedId(null)} />
-  ) : selectedId && cargandoDetalle && !selectedClosure ? (
+  ) : selectedId && cargandoDetalle ? (
     <div className="space-y-3" aria-busy="true" aria-label="Cargando ficha">
       <div className="skeleton h-6 w-24" />
       <div className="skeleton h-7 w-3/4" />
       <div className="skeleton aspect-[16/10] w-full" />
       <div className="skeleton h-4 w-2/3" />
     </div>
-  ) : selectedClosure ? (
-    <ClosureDetail item={selectedClosure} onClose={() => setSelectedId(null)} />
   ) : null;
 
   return (
@@ -340,10 +324,6 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
                 <Field label="Hasta">
                   <input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} className={inputCls} />
                 </Field>
-                <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-1 text-sm font-bold text-ink">
-                  <input type="checkbox" checked={showClosures} onChange={(e) => setShowClosures(e.target.checked)} className="size-5 accent-[#b8282d]" />
-                  Mostrar cortes
-                </label>
                 <button type="button" onClick={reset} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-primary hover:bg-tono-azul">
                   <RotateCcw className="size-4" aria-hidden /> Limpiar
                 </button>
@@ -364,8 +344,6 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
           {visible ? (
             <InterventionsMap
               interventions={filtered}
-              closures={visibleClosures}
-              showClosures={showClosures}
               selectedId={selectedId}
               focus={focus}
               userLocation={userLocation}
@@ -464,26 +442,6 @@ export function MapExplorer({ closures, neighborhoods, mode }: Props) {
                 ))}
               </ul>
             )}
-            {showClosures && visibleClosures.length > 0 && (
-              <div className="border-t border-line px-4 py-3 sm:px-5">
-                <p className="mb-2 flex items-center gap-2 text-sm font-bold text-ink">
-                  <Construction className="size-4 text-corte" aria-hidden /> Cortes en el mapa
-                </p>
-                <ul className="flex flex-wrap gap-2">
-                  {visibleClosures.map((c) => (
-                    <li key={c.id}>
-                      <button
-                        type="button"
-                        onClick={() => select(c.id)}
-                        className="rounded-full bg-corte-bg px-3 py-1.5 text-xs font-bold text-corte hover:ring-2 hover:ring-corte/30"
-                      >
-                        {c.street}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         </aside>
       </div>
@@ -514,10 +472,6 @@ function Legend() {
             {STATUS_META[s].label}
           </li>
         ))}
-        <li className="flex items-center gap-2 font-semibold text-ink">
-          <span className="h-1 w-4 rounded-full bg-[repeating-linear-gradient(90deg,#7c3aed_0_5px,transparent_5px_8px)]" aria-hidden />
-          Corte de tránsito
-        </li>
         <li className="flex items-center gap-2 font-semibold text-ink">
           <MapPin className="size-3.5 text-institucional" aria-hidden />
           Grupo de puntos

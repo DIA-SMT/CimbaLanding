@@ -1,12 +1,12 @@
 "use client";
 
-import { CalendarDays, Clock, Construction, HardHat, ImageOff, MapPin, Signpost, Timer, Wrench, X } from "lucide-react";
-import type { Intervention, TrafficClosure } from "@/domain/schemas";
+import { CalendarDays, HardHat, ImageOff, MapPin, Wrench, X } from "lucide-react";
+import type { Intervention } from "@/domain/schemas";
 import { DATE_LABEL, STATUS_META, kindLabel } from "@/domain/labels";
-import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { BeforeAfter } from "@/components/ui/BeforeAfter";
 import { Foto } from "@/components/ui/Foto";
-import { ClosureBadge, StatusBadge } from "@/components/ui/primitives";
+import { StatusBadge } from "@/components/ui/primitives";
 
 function Row({ icon: Icon, label, children }: { icon: typeof MapPin; label: string; children: React.ReactNode }) {
   return (
@@ -73,50 +73,6 @@ export function InterventionDetail({ item, onClose }: { item: Intervention; onCl
       <p className="border-t border-line pt-3 text-xs text-ink-soft">
         Fuente: CIMBA · registro {item.id} · actualizado el {formatDate(item.updatedAt)}
       </p>
-    </article>
-  );
-}
-
-export function ClosureDetail({ item, onClose }: { item: TrafficClosure; onClose: () => void }) {
-  return (
-    <article aria-labelledby={`det-${item.id}`} className="space-y-4">
-      <header className="flex items-start gap-3">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-corte-bg px-2.5 py-1 text-xs font-bold text-corte">
-              <Construction className="size-3.5" aria-hidden /> Corte de tránsito
-            </span>
-            <ClosureBadge status={item.status} />
-          </p>
-          <h3 id={`det-${item.id}`} className="mt-2 text-xl font-extrabold leading-snug text-ink">
-            {item.street}
-          </h3>
-          <p className="text-ink-soft">{item.section}</p>
-        </div>
-        <CloseBtn onClose={onClose} />
-      </header>
-      <dl className="grid gap-3">
-        <Row icon={CalendarDays} label="Fecha">
-          Desde {formatDateTime(item.startsAt)}
-          {item.endsAt ? ` hasta ${formatDateTime(item.endsAt)}` : " · finalización a confirmar"}
-        </Row>
-        {item.schedule && (
-          <Row icon={Clock} label="Horario">
-            {item.schedule}
-          </Row>
-        )}
-        <Row icon={Wrench} label="Motivo">
-          {item.reason}
-        </Row>
-        {item.estimatedDuration && (
-          <Row icon={Timer} label="Duración estimada">
-            {item.estimatedDuration}
-          </Row>
-        )}
-        <Row icon={Signpost} label="Desvío">
-          {item.officialDetour ?? "Sin desvío oficial informado."}
-        </Row>
-      </dl>
     </article>
   );
 }

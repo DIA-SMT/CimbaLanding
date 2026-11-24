@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Lock, MapPinned, Megaphone, MessageSquareText, Route, TrafficCone } from "lucide-react";
+import { ArrowRight, Lock, MapPinned, Megaphone, MessageSquareText, Route, TrendingUp } from "lucide-react";
 import { MigueAvatar } from "@/components/migue/MigueAvatar";
 import { openMigue } from "@/components/migue/events";
 import { MIGUE_STARTERS } from "@/lib/migue/types";
@@ -9,7 +9,7 @@ import { Container } from "@/components/ui/primitives";
 const CAPS = [
   { icon: Route, text: "Consultar reparaciones por calle" },
   { icon: MapPinned, text: "Ver lo que pasa en tu barrio" },
-  { icon: TrafficCone, text: "Conocer cortes de tránsito" },
+  { icon: TrendingUp, text: "Ver cómo evolucionan las reparaciones" },
   { icon: Megaphone, text: "Orientarte para hacer un reclamo" },
 ];
 

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Crosshair, History, Home, Loader2, TrafficCone, X } from "lucide-react";
-import type { DataMode, Intervention, Neighborhood, TrafficClosure } from "@/domain/schemas";
+import { ArrowRight, Crosshair, History, Home, Loader2, X } from "lucide-react";
+import type { DataMode, Intervention, Neighborhood } from "@/domain/schemas";
 import { DATE_LABEL, STATUS_META, kindLabel } from "@/domain/labels";
-import { distanceKm, formatDate, formatDateTime } from "@/lib/format";
+import { distanceKm, formatDate } from "@/lib/format";
 import { goToMap } from "@/hooks/useExplorer";
 import { DataModeBadge } from "@/components/ui/primitives";
 
@@ -29,11 +29,9 @@ function save(id: string | null) {
 
 export function MyNeighborhood({
   neighborhoods,
-  closures,
   mode,
 }: {
   neighborhoods: Neighborhood[];
-  closures: TrafficClosure[];
   mode: DataMode;
 }) {
   const [hoodId, setHoodId] = useState<string | null>(null);
@@ -77,7 +75,6 @@ export function MyNeighborhood({
         : [],
     [delBarrio, hoodId],
   );
-  const hoodClosures = closures.filter((c) => c.neighborhoodId === hoodId && c.status !== "finalizado");
   const count = (s: Intervention["status"]) => items.filter((i) => i.status === s).length;
 
   const locate = () => {
@@ -112,7 +109,7 @@ export function MyNeighborhood({
           <h2 id="barrio-title" className="mt-2 text-[1.9rem] font-extrabold leading-tight tracking-tight sm:text-[2.2rem]">
             ¿Qué pasa en tu barrio?
           </h2>
-          <p className="mt-3 text-white/85">Elegí tu barrio para ver las reparaciones registradas, los trabajos en curso y los cortes próximos.</p>
+          <p className="mt-3 text-white/85">Elegí tu barrio para ver las reparaciones registradas y los trabajos en curso.</p>
 
           <label htmlFor="barrio-select" className="mt-6 block text-sm font-bold text-white/90">
             Barrio
@@ -202,23 +199,7 @@ export function MyNeighborhood({
                   ))}
                 </ul>
 
-                <div className="mt-5 grid gap-5 md:grid-cols-2">
-                  <div>
-                    <h4 className="mb-2 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-ink-soft">
-                      <TrafficCone className="size-4 text-corte" aria-hidden /> Cortes próximos
-                    </h4>
-                    {hoodClosures.length === 0 ? (
-                      <p className="text-sm text-ink-soft">No hay cortes vigentes ni programados publicados.</p>
-                    ) : (
-                      <ul className="grid gap-2">
-                        {hoodClosures.map((c) => (
-                          <li key={c.id} className="rounded-xl bg-corte-bg/60 px-3 py-2 text-sm">
-                            <span className="font-bold">{c.street}</span> · {c.status === "vigente" ? "vigente" : `desde ${formatDateTime(c.startsAt)}`}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                <div className="mt-5 grid gap-5">
                   <div>
                     <h4 className="mb-2 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-ink-soft">
                       <History className="size-4 text-primary" aria-hidden /> Historial reciente

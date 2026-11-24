@@ -6,7 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { MapOff } from "./MapOff";
 import { siteConfig } from "@/config/site";
 import { STATUS_META } from "@/domain/labels";
-import type { Intervention, TrafficClosure } from "@/domain/schemas";
+import type { Intervention } from "@/domain/schemas";
 import { prefersReducedMotion } from "@/hooks/useExplorer";
 
 export interface MapFocus {
@@ -19,8 +19,6 @@ export interface MapFocus {
 interface Props {
   /** Sólo hace falta id, estado y posición (puntos livianos). */
   interventions: Array<Pick<Intervention, "id" | "status" | "location">>;
-  closures: TrafficClosure[];
-  showClosures: boolean;
   selectedId: string | null;
   focus: MapFocus | null;
   userLocation: { lat: number; lng: number } | null;
@@ -51,26 +49,8 @@ function toPoints(items: Props["interventions"]): GeoJSON.FeatureCollection<GeoJ
   };
 }
 
-function toLines(items: TrafficClosure[]): GeoJSON.FeatureCollection {
-  return {
-    type: "FeatureCollection",
-    features: items.flatMap((c) => {
-      const i = Math.floor((c.path.length - 1) / 2);
-      const [a, b] = [c.path[i], c.path[i + 1]];
-      const center: [number, number] = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      return [
-        { type: "Feature", properties: { id: c.id, status: c.status }, geometry: { type: "LineString", coordinates: c.path } },
-        { type: "Feature", properties: { id: c.id, status: c.status, kind: "pin" }, geometry: { type: "Point", coordinates: center } },
-      ];
-    }),
-  };
-}
-
-/**
- * Mapa MapLibre con capa de intervenciones agrupadas (clusters nativos) y una
- * capa diferenciada de cortes de tránsito.
- */
-export default function InterventionsMap({ interventions, closures, showClosures, selectedId, focus, userLocation, onSelect }: Props) {
+/** Mapa MapLibre con las intervenciones agrupadas (clusters nativos). */
+export default function InterventionsMap({ interventions, selectedId, focus, userLocation, onSelect }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const userMarker = useRef<maplibregl.Marker | null>(null);
@@ -109,7 +89,7 @@ export default function InterventionsMap({ interventions, closures, showClosures
     }
     mapRef.current = map;
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.getCanvas().setAttribute("aria-label", "Mapa de intervenciones y cortes de tránsito de San Miguel de Tucumán");
+    map.getCanvas().setAttribute("aria-label", "Mapa de intervenciones viales de San Miguel de Tucumán");
     map.on("error", (e) => {
       if (!map.isStyleLoaded() && (e.error as { status?: number })?.status) setFailed(true);
     });
@@ -122,41 +102,6 @@ export default function InterventionsMap({ interventions, closures, showClosures
         clusterRadius: 46,
         clusterMaxZoom: 15,
         promoteId: "id",
-      });
-      map.addSource("closures", { type: "geojson", data: toLines([]) });
-
-      // Cortes (debajo de los marcadores)
-      map.addLayer({
-        id: "closures-casing",
-        type: "line",
-        source: "closures",
-        filter: ["==", ["geometry-type"], "LineString"],
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 12, 6, 17, 14] },
-      });
-      map.addLayer({
-        id: "closures-line",
-        type: "line",
-        source: "closures",
-        filter: ["==", ["geometry-type"], "LineString"],
-        layout: { "line-cap": "butt", "line-join": "round" },
-        paint: {
-          "line-color": ["match", ["get", "status"], "vigente", "#7c3aed", "#a78bfa"],
-          "line-width": ["interpolate", ["linear"], ["zoom"], 12, 3.5, 17, 9],
-          "line-dasharray": [1.6, 1],
-        },
-      });
-      map.addLayer({
-        id: "closures-pin",
-        type: "circle",
-        source: "closures",
-        filter: ["==", ["get", "kind"], "pin"],
-        paint: {
-          "circle-radius": 9,
-          "circle-color": ["match", ["get", "status"], "vigente", "#7c3aed", "#a78bfa"],
-          "circle-stroke-color": "#fff",
-          "circle-stroke-width": 3,
-        },
       });
 
       // Clusters
@@ -222,9 +167,7 @@ export default function InterventionsMap({ interventions, closures, showClosures
         if (id) onSelectRef.current(id);
       };
       map.on("click", "points", pick);
-      map.on("click", "closures-pin", pick);
-      map.on("click", "closures-line", pick);
-      for (const layer of ["clusters", "points", "closures-pin", "closures-line"]) {
+      for (const layer of ["clusters", "points"]) {
         map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
         map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
       }
@@ -242,12 +185,6 @@ export default function InterventionsMap({ interventions, closures, showClosures
     if (!ready) return;
     (mapRef.current?.getSource("interventions") as GeoJSONSource | undefined)?.setData(toPoints(interventions));
   }, [ready, interventions]);
-
-  // Cortes
-  useEffect(() => {
-    if (!ready) return;
-    (mapRef.current?.getSource("closures") as GeoJSONSource | undefined)?.setData(toLines(showClosures ? closures : []));
-  }, [ready, closures, showClosures]);
 
   // Selección
   const prevSel = useRef<string | null>(null);
